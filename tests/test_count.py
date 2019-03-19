@@ -9,7 +9,7 @@ def test_count():
     print("We are here")
     print(odyssey.__version__)
 
-    o = odyssey.Odb("/home/simon/testcases/odb/BTEM.2.odb")
+    o = odyssey.Odb("/home/simon/testcases/odb/BTEM.2.odb", aggregated=False)
     # o = odyssey.Odb("/home/ma/mass/testcases/odb_play/BTEM.2.odb")
 
     tables = o.tables
@@ -22,7 +22,7 @@ def test_count():
 def test_count_file():
     """Check that we can open a file like object"""
     with open('/home/simon/testcases/odb/BTEM.2.odb', 'rb') as f:
-        o = odyssey.Odb(f)
+        o = odyssey.Odb(f, aggregated=False)
 
     tables = o.tables
     assert len(tables) == 221

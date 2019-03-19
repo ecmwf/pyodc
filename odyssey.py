@@ -15,14 +15,13 @@
 
 import cffi
 import ctypes.util
-import collections
 import pandas
 import numpy
 import io
 import os
-import inspect
+from pkg_resources import parse_version
 
-__version__ = "0.19.0.dev0"
+__version__ = "0.99.0"
 
 print(ctypes.util.find_library("odccore"))
 
@@ -35,7 +34,7 @@ ffi = cffi.FFI()
 class ODCException(RuntimeError):
     pass
 
-class ODCAPIException(ODCException):
+class ODCException(ODCException):
     pass
 
 
@@ -53,6 +52,10 @@ class PatchedLib:
 
         # Todo: Version check against __version__
 
+        # All of the executable members of the CFFI-loaded library are functions in the ODC
+        # C API. These should be wrapped with the correct error handling. Otherwise forward
+        # these on directly.
+
         for f in dir(self.__lib):
             try:
                 attr = getattr(self.__lib, f)
@@ -60,6 +63,23 @@ class PatchedLib:
             except Exception as e:
                 print(e)
                 print("Error retrieving attribute", f, "from library")
+
+        # Initialise the library, and sett it up for python-appropriate behaviour
+
+        self.odc_initialise_api()
+        self.odc_error_handling(self.ODC_ERRORS_CHECKED)
+        self.odc_integer_behaviour(self.ODC_INTEGERS_AS_LONGS)
+
+        # Check the library version
+
+        versionstr = ffi.string(self.odc_version()).decode('utf-8')
+
+        v1 = parse_version(versionstr)
+        v2 = parse_version(__version__)
+
+        if parse_version(versionstr) < parse_version(__version__):
+            raise RuntimeError("Version of libodc found is too old. {} < {}".format(versionstr, __version__))
+
 
     def __read_header(self):
         # TODO: Find this API file properly
@@ -71,6 +91,10 @@ class PatchedLib:
         raise RuntimeError("ODC header not found")
 
     def __check_error(self, fn, name):
+        """
+        If calls into the ODC library return errors, ensure that they get detected and reported
+        by throwing an appropriate python exception.
+        """
 
         def wrapped_fn(*args, **kwargs):
             retval = fn(*args, **kwargs)
@@ -78,7 +102,7 @@ class PatchedLib:
             if self.__lib.odc_errno != 0:
                 helpstring = "Failed to execute {}: {}".format(name, ffi.string(self.__lib.odc_error_string()).decode())
                 self.__lib.odc_reset_error()
-                raise ODCAPIException(helpstring)
+                raise ODCException(helpstring)
             return retval
 
         return wrapped_fn
@@ -98,12 +122,9 @@ def memoize_constant(fn):
     return wrapped_fn
 
 
-# And bootstrap the library
+# Bootstrap the library
 
 lib = PatchedLib()
-lib.odc_initialise_api()
-lib.odc_error_handling(lib.ODC_ERRORS_CHECKED)
-lib.odc_integer_behaviour(lib.ODC_INTEGERS_AS_LONGS)
 
 # Construct lookups/constants as is useful
 
@@ -124,7 +145,10 @@ class Odb:
     __odb = None
     __tables = None
 
-    def __init__(self, source):
+    def __init__(self, source, aggregated=True):
+
+        self.__aggregated = aggregated
+
         if isinstance(source, io.IOBase):
             self.__odb = lib.odc_open_from_fd(source.fileno())
         else:
@@ -139,7 +163,7 @@ class Odb:
         if self.__tables is None:
             self.__tables = []
             while True:
-                t = lib.odc_next_table(self.__odb, True)
+                t = lib.odc_next_table(self.__odb, self.__aggregated)
                 if not t:
                     break
                 self.__tables.append(Table(ffi.gc(t, lib.odc_free_table)))
