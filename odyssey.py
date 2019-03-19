@@ -248,8 +248,7 @@ class Table:
             elif col.type == STRING:
                 string_cols.setdefault(col.datasize, []).append(col)
 
-        strided_data = ffi.new('struct odb_strided_data_t[]', len(columns))
-        column_details = ffi.new('struct odb_column_t[]', len(columns))
+        columns_data = ffi.new('struct odb_strided_column_t[]', len(columns))
 
         dataframes = []
         pos = 0
@@ -265,23 +264,17 @@ class Table:
                 strides = array.ctypes.strides
 
                 for i, col in enumerate(cols):
-                    strided_data[pos].data = ffi.cast("char *", pointer + (i * strides[1]))
-                    strided_data[pos].nelem = self.nrows
-                    strided_data[pos].elemSize = dsize
-                    strided_data[pos].stride = strides[0]
-                    column_details[pos].name = col.name.encode('utf-8')
+                    columns_data[pos].data = ffi.cast("char *", pointer + (i * strides[1]))
+                    columns_data[pos].nelem = self.nrows
+                    columns_data[pos].elemSize = dsize
+                    columns_data[pos].stride = strides[0]
+                    columns_data[pos].name = col.name.encode('utf-8')
                     pos += 1
 
                 dataframes.append(pandas.DataFrame(array, columns=[c.name for c in cols], copy=False))
 
-        decode_target = ffi.new('struct odb_decoded_t*')
-        decode_target.columns = column_details
-        decode_target.ownedData = ffi.NULL
-        decode_target.columnData = strided_data
-        decode_target.ncolumns = len(columns)
-        decode_target.nrows = self.nrows
-
-        lib.odc_table_decode(self.__table, decode_target, 4)
+        rows_decoded = lib.odc_table_decode(self.__table, len(columns), self.nrows, columns_data, 4)
+        assert rows_decoded == self.nrows
 
         # And construct the DataFrame from the decoded data
 
@@ -289,3 +282,70 @@ class Table:
             return dataframes[1]
         else:
             return pandas.concat(dataframes, copy=False, axis=1)
+
+
+def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, **kwargs):
+
+    def infer_column_type(arr, override_type):
+
+        return_arr = arr
+        typ = override_type
+
+        if typ is None:
+            if arr.dtype in ('uint64', 'int64'):
+                typ = INTEGER
+            elif arr.dtype == 'float64':
+                if not data.isnull().all() and all(pandas.isnull(v) or float(v).is_integer() for v in arr):
+                    typ = INTEGER
+                    return_arr = arr.fillna(value=lib.odc_missing_integer()).astype('int64')
+                else:
+                    typ = DOUBLE
+            elif arr.dtype == 'object':
+                if not arr.isnull().all() and all(s is None or isinstance(s, str) for s in arr):
+                    typ = STRING
+                elif arr.isnull().all():
+                    typ = INTEGER
+
+        if arr.dtype == 'object':
+            # Map strings into an array that can be read in C
+            if typ == STRING:
+                return_arr = return_arr.astype("|S{}".format(max(8, 8 * (1 + ((max(len(s) for s in arr)- 1) // 8)))))
+            elif typ == INTEGER:
+                return_arr = return_arr.fillna(value=lib.odc_missing_integer()).astype("int64")
+
+        if typ is None:
+            raise ValueError("Unsupported value type: {}".format(arr.dtype))
+
+        return return_arr, typ
+
+    ncols = df.shape[1]
+    nrows = df.shape[0]
+    if types is None:
+        types = {}
+
+    column_data = ffi.new('struct odb_strided_column_t[]', ncols)
+
+    # We store all of the numpy arrays here. Mostly this is just another reference to an
+    # existing array, but some of the types require us to create a new (casted) copy, so
+    # we need to put it somewhere to ensure it stays alive appropriately long.
+    data_cache = []
+
+    for i, (name, data) in enumerate(df.items()):
+        data, typ = infer_column_type(data, types.get(name, None))
+        data_cache.append(data)
+        column_data[i].type = typ
+        column_data[i].data = ffi.cast("char *", data.values.ctypes.data)
+        column_data[i].nelem = nrows
+        column_data[i].elemSize = data.dtype.itemsize
+        column_data[i].stride = data.strides[0]
+        column_data[i].name = name.encode("utf-8")
+
+    lib.odc_table_encode_to_file(f.fileno(), ncols, nrows, column_data, 10000)
+
+
+def decode_dataframe(source, columns=None):
+
+    o = Odb(source)
+
+    assert len(o.tables) == 1
+    return o.tables[0].dataframe(columns=columns)
