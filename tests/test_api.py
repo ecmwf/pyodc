@@ -1,8 +1,8 @@
 import pytest
-import odyssey
+import codyssey
 
 
 def test_error_handling():
     """Ensure that exceptions in the C++ layer are caught and forwarded as python exceptions"""
-    with pytest.raises(odyssey.ODCException):
-        o = odyssey.Odb("No such ODB file")
+    with pytest.raises(codyssey.ODCException):
+        r = codyssey.Reader("No such ODB file")

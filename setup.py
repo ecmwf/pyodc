@@ -22,7 +22,7 @@ def parse_version_from(path):
 
 setuptools.setup(
     name='odyssey',
-    version=parse_version_from('odyssey.py'),
+    version=parse_version_from('codyssey.py'),
     description='Python interface to odc for encoding/decoding ODB files'
     long_description=read('README.rst') + read('CHANGELOG.rst'),
     author='European Centre for Medium-Range Weather Forecasts (ECMWF)',

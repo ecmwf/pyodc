@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections import Iterable
 
 import cffi
 import ctypes.util
@@ -25,7 +26,6 @@ __version__ = "0.99.0"
 
 print(ctypes.util.find_library("odccore"))
 
-# Locate the C API
 # TODO: Fallback to the python api
 
 ffi = cffi.FFI()
@@ -45,6 +45,8 @@ class PatchedLib:
     Finds the header file associated with the ODC C API and parses it, loads the shared library,
     and patches the accessors with automatic python-C error handling.
     """
+    __type_names = {}
+
     def __init__(self):
 
         ffi.cdef(self.__read_header())
@@ -59,7 +61,7 @@ class PatchedLib:
         for f in dir(self.__lib):
             try:
                 attr = getattr(self.__lib, f)
-                setattr(self, f, self.__check_error(attr, f) if hasattr(attr, '__call__') else attr)
+                setattr(self, f, self.__check_error(attr, f) if callable(attr) else attr)
             except Exception as e:
                 print(e)
                 print("Error retrieving attribute", f, "from library")
@@ -67,12 +69,13 @@ class PatchedLib:
         # Initialise the library, and sett it up for python-appropriate behaviour
 
         self.odc_initialise_api()
-        self.odc_error_handling(self.ODC_ERRORS_CHECKED)
         self.odc_integer_behaviour(self.ODC_INTEGERS_AS_LONGS)
 
         # Check the library version
 
-        versionstr = ffi.string(self.odc_version()).decode('utf-8')
+        tmp_str = ffi.new('char**')
+        self.odc_version(tmp_str)
+        versionstr = ffi.string(tmp_str[0]) .decode('utf-8')
 
         v1 = parse_version(versionstr)
         v2 = parse_version(__version__)
@@ -80,29 +83,31 @@ class PatchedLib:
         if parse_version(versionstr) < parse_version(__version__):
             raise RuntimeError("Version of libodc found is too old. {} < {}".format(versionstr, __version__))
 
+    def type_name(self, type):
+        name = self.__type_names.get(type, None)
+        if name is not None:
+            return name
+
+        name_tmp = ffi.new('char**')
+        self.odc_type_name(type, name_tmp)
+        name = ffi.string(name_tmp[0]).decode('utf-8')
+        self.__type_names[type] = name
+        return name
 
     def __read_header(self):
-        # TODO: Find this API file properly
-        for p in ('/home/ma/mass/git/odb/odc/odc/src/odc/api/odc_c.h',
-                  '/home/simon/git/odb/odc/odc/src/odc/api/odc_c.h'):
-            if os.path.exists(p):
-                with open(p, 'r') as f:
-                    return f.read()
-        raise RuntimeError("ODC header not found")
+        with open(os.path.join(os.path.dirname(__file__), 'processed_odc.h'), 'r') as f:
+            return f.read()
 
     def __check_error(self, fn, name):
         """
         If calls into the ODC library return errors, ensure that they get detected and reported
         by throwing an appropriate python exception.
         """
-
         def wrapped_fn(*args, **kwargs):
             retval = fn(*args, **kwargs)
-
-            if self.__lib.odc_errno != 0:
-                helpstring = "Failed to execute {}: {}".format(name, ffi.string(self.__lib.odc_error_string()).decode())
-                self.__lib.odc_reset_error()
-                raise ODCException(helpstring)
+            if retval not in (self.__lib.ODC_SUCCESS, self.__lib.ODC_ITERATION_COMPLETE):
+                error_str = self.__lib.odc_error_string(retval)
+                raise ODCException(error_str)
             return retval
 
         return wrapped_fn
@@ -128,50 +133,59 @@ lib = PatchedLib()
 
 # Construct lookups/constants as is useful
 
-TYPE_NAMES = [ffi.string(lib.odc_type_name(i)).decode() for i in range(lib.ODC_NUM_TYPES)]
-TYPE_IDS = {name: i for i, name in enumerate(TYPE_NAMES)}
-
-IGNORE = TYPE_IDS["ignore"]
-INTEGER = TYPE_IDS["integer"]
-DOUBLE = TYPE_IDS["double"]
-REAL = TYPE_IDS["real"]
-STRING = TYPE_IDS["string"]
-BITFIELD = TYPE_IDS["bitfield"]
+IGNORE = lib.ODC_IGNORE
+INTEGER = lib.ODC_IGNORE
+DOUBLE = lib.ODC_IGNORE
+REAL = lib.ODC_IGNORE
+STRING = lib.ODC_IGNORE
+BITFIELD = lib.ODC_IGNORE
 
 
-class Odb:
+class Reader:
     """This is the main container class for reading ODBs"""
 
-    __odb = None
-    __tables = None
+    __reader = None
+    __frames = None
 
     def __init__(self, source, aggregated=True):
 
         self.__aggregated = aggregated
 
+        reader = ffi.new('odc_reader_t**')
         if isinstance(source, io.IOBase):
-            self.__odb = lib.odc_open_from_fd(source.fileno())
+            lib.odc_open_file_descriptor(reader, source.fileno())
         else:
             assert isinstance(source, str)
-            self.__odb = lib.odc_open_for_read(source.encode())
+            lib.odc_open_path(reader, source.encode())
 
         # Set free function
-        self.__odb = ffi.gc(self.__odb, lib.odc_close)
+        self.__reader = ffi.gc(reader[0], lib.odc_close)
 
     @property
-    def tables(self):
-        if self.__tables is None:
-            self.__tables = []
-            while True:
-                t = lib.odc_next_table(self.__odb, self.__aggregated)
-                if not t:
-                    break
-                self.__tables.append(Table(ffi.gc(t, lib.odc_free_table)))
+    def frames(self):
+        if self.__frames is None:
+            self.__frames = []
 
-        return self.__tables
+            frame = ffi.new('odc_frame_t**')
+            lib.odc_new_frame(frame, self.__reader)
+            frame = ffi.gc(frame[0], lib.odc_free_frame)
+            while (lib.odc_next_frame_aggregated(frame, -1) if self.__aggregated else lib.odc_next_frame(frame)) != lib.ODC_ITERATION_COMPLETE:
+
+                copy_frame = ffi.new('odc_frame_t**')
+                lib.odc_copy_frame(frame, copy_frame)
+                self.__frames.append(Frame(ffi.gc(copy_frame[0], lib.odc_free_frame)))
+
+        return self.__frames
 
 
 class ColumnInfo:
+
+    class Bitfield:
+        def __init__(self, name, size, offset):
+            self.name = name
+            self.size = size
+            self.offset = offset
+
     def __init__(self, name, idx, type, datasize, bitfields):
         self.name = name
         self.type = type
@@ -179,22 +193,25 @@ class ColumnInfo:
         self.datasize = datasize
         self.bitfields = bitfields
         assert (type == BITFIELD) != (bitfields is None)
+        if self.bitfields:
+            assert isinstance(self.bitfields, Iterable)
+            assert all(isinstance(b, ColumnInfo.Bitfield) for b in self.bitfields)
 
     def __str__(self):
         if self.bitfields is not None:
             bitfield_str = "(" + ",".join("{}:{}".format(b[0], b[1]) for b in self.bitfields) + ")"
         else:
             bitfield_str = ""
-        return "{}:{}{}".format(self.name, TYPE_NAMES[self.type], bitfield_str)
+        return "{}:{}{}".format(self.name, lib.type_name(self.type), bitfield_str)
 
     def __repr__(self):
         return str(self)
 
 
-class Table:
+class Frame:
 
     def __init__(self, table):
-        self.__table = table
+        self.__frame = table
         self.__columns = None
 
     @property
@@ -203,9 +220,9 @@ class Table:
         columns = []
         for col in range(self.ncolumns):
 
-            name = ffi.string(lib.odc_table_column_name(self.__table, col)).decode()
-            type = lib.odc_table_column_type(self.__table, col)
-            datasize = lib.odc_table_column_data_size(self.__table, col)
+            name = ffi.string(lib.odc_frame_column_name(self.__frame, col)).decode()
+            type = lib.odc_frame_column_type(self.__frame, col)
+            datasize = lib.odc_frame_column_data_size(self.__frame, col)
             bitfields = None
 
             if type == STRING:
@@ -214,13 +231,13 @@ class Table:
                 assert datasize == 8
 
             if type == BITFIELD:
-                num_fields = lib.odc_table_column_bitfield_count(self.__table, col)
+                num_fields = lib.odc_frame_column_bitfield_count(self.__frame, col)
                 bitfields = []
                 for n in range(num_fields):
-                    bitfields.append((
-                        ffi.string(lib.odc_table_column_bitfield_field_name(self.__table, col, n)).decode(),
-                        lib.odc_table_column_bitfield_field_size(self.__table, col, n),
-                        lib.odc_table_column_bitfield_field_offset(self.__table, col, n)))
+                    bitfields.append(ColumnInfo.Bitfield(
+                        name=ffi.string(lib.odc_frame_column_bitfield_field_name(self.__frame, col, n)).decode(),
+                        size=lib.odc_frame_column_bitfield_field_size(self.__frame, col, n),
+                        offset=lib.odc_frame_column_bitfield_field_offset(self.__frame, col, n)))
 
             columns.append(ColumnInfo(name, col, type, datasize, bitfields))
 
@@ -239,12 +256,16 @@ class Table:
     @property
     @memoize_constant
     def nrows(self):
-        return lib.odc_table_num_rows(self.__table)
+        count = ffi.new('long*')
+        lib.odc_frame_row_count(self.__frame, count)
+        return int(count[0])
 
     @property
     @memoize_constant
     def ncolumns(self):
-        return lib.odc_table_num_columns(self.__table)
+        count = ffi.new('int*')
+        lib.odc_frame_column_count(self.__frame, count)
+        return int(count[0])
 
     def dataframe(self, columns=None):
 
@@ -272,7 +293,8 @@ class Table:
             elif col.type == STRING:
                 string_cols.setdefault(col.datasize, []).append(col)
 
-        columns_data = ffi.new('struct odb_strided_column_t[]', len(columns))
+        decode_target = ffi.gc(lib.odc_alloc_decode_target(), lib.odc_free_decode_target)
+        lib.odc_decode_target_set_row_count(decode_target, self.nrows)
 
         dataframes = []
         pos = 0
@@ -288,16 +310,16 @@ class Table:
                 strides = array.ctypes.strides
 
                 for i, col in enumerate(cols):
-                    columns_data[pos].data = ffi.cast("char *", pointer + (i * strides[1]))
-                    columns_data[pos].nelem = self.nrows
-                    columns_data[pos].elemSize = dsize
-                    columns_data[pos].stride = strides[0]
-                    columns_data[pos].name = col.name.encode('utf-8')
+
+                    assert pos == lib.odc_decode_target_add_column(decode_target, col.name.encode('utf-8'))
+                    lib.odc_decode_target_column_set_size(decode_target, pos, dsize)
+                    lib.odc_decode_target_column_set_stride(decode_target, pos, strides[0])
+                    lib.odc_decode_target_column_set_data(decode_target, pos, ffi.cast("void*", pointer + (i * strides[1])))
                     pos += 1
 
                 dataframes.append(pandas.DataFrame(array, columns=[c.name for c in cols], copy=False))
 
-        rows_decoded = lib.odc_table_decode(self.__table, len(columns), self.nrows, columns_data, 4)
+        rows_decoded = lib.odc_frame_decode(self.__frame, decode_target, len(os.sched_getaffinity(0)))
         assert rows_decoded == self.nrows
 
         # And construct the DataFrame from the decoded data
@@ -308,7 +330,7 @@ class Table:
             return pandas.concat(dataframes, copy=False, axis=1)
 
 
-def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, **kwargs):
+def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_per_frame=10000, **kwargs):
 
     def infer_column_type(arr, override_type):
 
@@ -342,12 +364,13 @@ def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, **kwa
 
         return return_arr, typ
 
-    ncols = df.shape[1]
     nrows = df.shape[0]
     if types is None:
         types = {}
 
-    column_data = ffi.new('struct odb_strided_column_t[]', ncols)
+    encoder = ffi.gc(lib.odc_alloc_encoder(), lib.odc_free_encoder)
+    lib.odc_encoder_set_row_count(encoder, nrows)
+    lib.odc_encoder_set_rows_per_frame(encoder, rows_per_frame)
 
     # We store all of the numpy arrays here. Mostly this is just another reference to an
     # existing array, but some of the types require us to create a new (casted) copy, so
@@ -357,19 +380,17 @@ def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, **kwa
     for i, (name, data) in enumerate(df.items()):
         data, typ = infer_column_type(data, types.get(name, None))
         data_cache.append(data)
-        column_data[i].type = typ
-        column_data[i].data = ffi.cast("char *", data.values.ctypes.data)
-        column_data[i].nelem = nrows
-        column_data[i].elemSize = data.dtype.itemsize
-        column_data[i].stride = data.strides[0]
-        column_data[i].name = name.encode("utf-8")
+        assert i == lib.odc_encoder_add_column(encoder, name.encode('utf-8'), typ)
+        lib.odc_encoder_column_set_size(encoder, i, data.dtype.itemsize)
+        lib.odc_encoder_column_set_stride(encoder, i, data.strides[0])
+        lib.odc_encoder_column_set_data(encoder, i, ffi.cast("void*", data.values.ctypes.data))
 
-    lib.odc_table_encode_to_file(f.fileno(), ncols, nrows, column_data, 10000)
+    lib.odc_encode_to_file_descriptor(encoder, f.fileno())
 
 
 def decode_dataframe(source, columns=None):
 
     o = Odb(source)
 
-    assert len(o.tables) == 1
-    return o.tables[0].dataframe(columns=columns)
+    assert len(o.frames) == 1
+    return o.frames[0].dataframe(columns=columns)
