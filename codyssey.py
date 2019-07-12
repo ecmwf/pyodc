@@ -20,6 +20,7 @@ import pandas
 import numpy
 import io
 import os
+from functools import reduce
 from pkg_resources import parse_version
 
 __version__ = "0.99.0"
@@ -32,9 +33,6 @@ ffi = cffi.FFI()
 
 
 class ODCException(RuntimeError):
-    pass
-
-class ODCException(ODCException):
     pass
 
 
@@ -75,7 +73,7 @@ class PatchedLib:
 
         tmp_str = ffi.new('char**')
         self.odc_version(tmp_str)
-        versionstr = ffi.string(tmp_str[0]) .decode('utf-8')
+        versionstr = ffi.string(tmp_str[0]).decode('utf-8')
 
         v1 = parse_version(versionstr)
         v2 = parse_version(__version__)
@@ -83,15 +81,15 @@ class PatchedLib:
         if parse_version(versionstr) < parse_version(__version__):
             raise RuntimeError("Version of libodc found is too old. {} < {}".format(versionstr, __version__))
 
-    def type_name(self, type):
-        name = self.__type_names.get(type, None)
+    def type_name(self, typ: int):
+        name = self.__type_names.get(typ, None)
         if name is not None:
             return name
 
         name_tmp = ffi.new('char**')
-        self.odc_type_name(type, name_tmp)
+        self.odc_type_name(typ, name_tmp)
         name = ffi.string(name_tmp[0]).decode('utf-8')
-        self.__type_names[type] = name
+        self.__type_names[typ] = name
         return name
 
     def __read_header(self):
@@ -106,7 +104,7 @@ class PatchedLib:
         def wrapped_fn(*args, **kwargs):
             retval = fn(*args, **kwargs)
             if retval not in (self.__lib.ODC_SUCCESS, self.__lib.ODC_ITERATION_COMPLETE):
-                error_str = self.__lib.odc_error_string(retval)
+                error_str = "Error in function {}: {}".format(name, self.__lib.odc_error_string(retval))
                 raise ODCException(error_str)
             return retval
 
@@ -134,11 +132,11 @@ lib = PatchedLib()
 # Construct lookups/constants as is useful
 
 IGNORE = lib.ODC_IGNORE
-INTEGER = lib.ODC_IGNORE
-DOUBLE = lib.ODC_IGNORE
-REAL = lib.ODC_IGNORE
-STRING = lib.ODC_IGNORE
-BITFIELD = lib.ODC_IGNORE
+INTEGER = lib.ODC_INTEGER
+DOUBLE = lib.ODC_DOUBLE
+REAL = lib.ODC_REAL
+STRING = lib.ODC_STRING
+BITFIELD = lib.ODC_BITFIELD
 
 
 class Reader:
@@ -186,13 +184,13 @@ class ColumnInfo:
             self.size = size
             self.offset = offset
 
-    def __init__(self, name, idx, type, datasize, bitfields):
+    def __init__(self, name, idx, typ, datasize, bitfields):
         self.name = name
-        self.type = type
+        self.typ = typ
         self.index = idx
         self.datasize = datasize
         self.bitfields = bitfields
-        assert (type == BITFIELD) != (bitfields is None)
+        assert (typ == BITFIELD) != (bitfields is None)
         if self.bitfields:
             assert isinstance(self.bitfields, Iterable)
             assert all(isinstance(b, ColumnInfo.Bitfield) for b in self.bitfields)
@@ -202,7 +200,7 @@ class ColumnInfo:
             bitfield_str = "(" + ",".join("{}:{}".format(b[0], b[1]) for b in self.bitfields) + ")"
         else:
             bitfield_str = ""
-        return "{}:{}{}".format(self.name, lib.type_name(self.type), bitfield_str)
+        return "{}:{}{}".format(self.name, lib.type_name(self.typ), bitfield_str)
 
     def __repr__(self):
         return str(self)
@@ -220,26 +218,37 @@ class Frame:
         columns = []
         for col in range(self.ncolumns):
 
-            name = ffi.string(lib.odc_frame_column_name(self.__frame, col)).decode()
-            type = lib.odc_frame_column_type(self.__frame, col)
-            datasize = lib.odc_frame_column_data_size(self.__frame, col)
+            pname = ffi.new('const char**')
+            ptype = ffi.new('int*')
+            pdatasize = ffi.new('int*')
+            pbitfield_count = ffi.new('int*')
+            lib.odc_frame_column_attrs(self.__frame, col, pname, ptype, pdatasize, pbitfield_count)
+            name = ffi.string(pname[0]).decode('utf-8')
+            typ = int(ptype[0])
+            datasize = int(pdatasize[0])
+            bitfield_count = int(pbitfield_count[0])
             bitfields = None
 
-            if type == STRING:
+            if typ == STRING:
                 assert datasize % 8 == 0
             else:
                 assert datasize == 8
 
-            if type == BITFIELD:
-                num_fields = lib.odc_frame_column_bitfield_count(self.__frame, col)
+            if typ == BITFIELD:
                 bitfields = []
-                for n in range(num_fields):
-                    bitfields.append(ColumnInfo.Bitfield(
-                        name=ffi.string(lib.odc_frame_column_bitfield_field_name(self.__frame, col, n)).decode(),
-                        size=lib.odc_frame_column_bitfield_field_size(self.__frame, col, n),
-                        offset=lib.odc_frame_column_bitfield_field_offset(self.__frame, col, n)))
+                for n in range(bitfield_count):
 
-            columns.append(ColumnInfo(name, col, type, datasize, bitfields))
+                    pbitfield_name = ffi.new('const char**')
+                    poffset = ffi.new('int*')
+                    psize = ffi.new('int*')
+                    lib.odc_frame_bitfield_attrs(self.__frame, col, n, pbitfield_name, poffset, psize)
+
+                    bitfields.append(ColumnInfo.Bitfield(
+                        name=ffi.string(pbitfield_name[0]).decode('utf-8'),
+                        size=int(psize[0]),
+                        offset=int(poffset[0])))
+
+            columns.append(ColumnInfo(name, col, typ, datasize, bitfields))
 
         return columns
 
@@ -286,15 +295,18 @@ class Frame:
                 col = cd[name]
             except KeyError:
                 col = scd[name]
-            if col.type == INTEGER or col.type == BITFIELD:
+            if col.typ == INTEGER or col.typ == BITFIELD:
                 integer_cols.append(col)
-            elif col.type == REAL or col.type == DOUBLE:
+            elif col.typ == REAL or col.typ == DOUBLE:
                 double_cols.append(col)
-            elif col.type == STRING:
+            elif col.typ == STRING:
                 string_cols.setdefault(col.datasize, []).append(col)
 
-        decode_target = ffi.gc(lib.odc_alloc_decode_target(), lib.odc_free_decode_target)
-        lib.odc_decode_target_set_row_count(decode_target, self.nrows)
+        decoder = ffi.new('odc_decoder_t**')
+        lib.odc_new_decoder(decoder)
+        decoder = ffi.gc(decoder[0], lib.odc_free_decoder)
+
+        lib.odc_decoder_set_row_count(decoder, self.nrows)
 
         dataframes = []
         pos = 0
@@ -311,16 +323,21 @@ class Frame:
 
                 for i, col in enumerate(cols):
 
-                    assert pos == lib.odc_decode_target_add_column(decode_target, col.name.encode('utf-8'))
-                    lib.odc_decode_target_column_set_size(decode_target, pos, dsize)
-                    lib.odc_decode_target_column_set_stride(decode_target, pos, strides[0])
-                    lib.odc_decode_target_column_set_data(decode_target, pos, ffi.cast("void*", pointer + (i * strides[1])))
+                    lib.odc_decoder_add_column(decoder, col.name.encode('utf-8'))
+                    lib.odc_decoder_column_set_attrs(decoder, pos, dsize, strides[0],
+                                                     ffi.cast('void*', pointer + (i * strides[1])))
                     pos += 1
 
                 dataframes.append(pandas.DataFrame(array, columns=[c.name for c in cols], copy=False))
 
-        rows_decoded = lib.odc_frame_decode(self.__frame, decode_target, len(os.sched_getaffinity(0)))
-        assert rows_decoded == self.nrows
+        try:
+            threads = len(os.shed_getaffinity(0))
+        except AttributeError:
+            threads = os.cpu_count()
+
+        prows_decoded = ffi.new('long*')
+        lib.odc_decode_threaded(decoder, self.__frame, prows_decoded, threads)
+        assert prows_decoded[0] == self.nrows
 
         # And construct the DataFrame from the decoded data
 
@@ -331,9 +348,38 @@ class Frame:
 
 
 def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_per_frame=10000, **kwargs):
+    """
+    Encode a pandas dataframe into ODB2 format
+
+    :param df: The dataframe to encode
+    :param f: The file-like object into which to encode the ODB2 data
+    :param types: An optional (sparse) dictionary. Each key-value pair maps the name of a column to
+                  encode to an ODB2 data type to use to encode it.
+    :param rows_per_frame: The maximum number of rows to encode per frame. If this number is exceeded,
+                           a sequence of frames will be encoded
+    :param kwargs: Accept extra arguments that may be used by the python odyssey encoder.
+    :return:
+    """
+
+    # Some constants that are useful
+
+    pmissing_integer = ffi.new('long*')
+    pmissing_double = ffi.new('double*')
+    lib.odc_missing_integer(pmissing_integer)
+    lib.odc_missing_double(pmissing_double)
+    missing_integer = pmissing_integer[0]
+    missing_double = pmissing_double[0]
 
     def infer_column_type(arr, override_type):
-
+        """
+        Given a column of data, infer the encoding type.
+        :param arr: The column of data to encode
+        :param override_type:
+        :return: (return_arr, typ)
+            - return_arr is the column of data to encode. This may be of a different internal type/contents
+              to that supplied to the function, but it will normally not be.
+            - The ODB2 type to encode with.
+        """
         return_arr = arr
         typ = override_type
 
@@ -343,7 +389,7 @@ def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_
             elif arr.dtype == 'float64':
                 if not data.isnull().all() and all(pandas.isnull(v) or float(v).is_integer() for v in arr):
                     typ = INTEGER
-                    return_arr = arr.fillna(value=lib.odc_missing_integer()).astype('int64')
+                    return_arr = arr.fillna(value=missing_integer).astype('int64')
                 else:
                     typ = DOUBLE
             elif arr.dtype == 'object':
@@ -357,7 +403,7 @@ def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_
             if typ == STRING:
                 return_arr = return_arr.astype("|S{}".format(max(8, 8 * (1 + ((max(len(s) for s in arr)- 1) // 8)))))
             elif typ == INTEGER:
-                return_arr = return_arr.fillna(value=lib.odc_missing_integer()).astype("int64")
+                return_arr = return_arr.fillna(value=missing_integer).astype("int64")
 
         if typ is None:
             raise ValueError("Unsupported value type: {}".format(arr.dtype))
@@ -368,7 +414,10 @@ def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_
     if types is None:
         types = {}
 
-    encoder = ffi.gc(lib.odc_alloc_encoder(), lib.odc_free_encoder)
+    encoder = ffi.new('odc_encoder_t**')
+    lib.odc_new_encoder(encoder)
+    encoder = ffi.gc(encoder[0], lib.odc_free_encoder)
+
     lib.odc_encoder_set_row_count(encoder, nrows)
     lib.odc_encoder_set_rows_per_frame(encoder, rows_per_frame)
 
@@ -380,17 +429,19 @@ def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_
     for i, (name, data) in enumerate(df.items()):
         data, typ = infer_column_type(data, types.get(name, None))
         data_cache.append(data)
-        assert i == lib.odc_encoder_add_column(encoder, name.encode('utf-8'), typ)
-        lib.odc_encoder_column_set_size(encoder, i, data.dtype.itemsize)
-        lib.odc_encoder_column_set_stride(encoder, i, data.strides[0])
-        lib.odc_encoder_column_set_data(encoder, i, ffi.cast("void*", data.values.ctypes.data))
 
-    lib.odc_encode_to_file_descriptor(encoder, f.fileno())
+        lib.odc_encoder_add_column(encoder, name.encode('utf-8'), typ)
+        lib.odc_encoder_column_set_attrs(encoder, i, data.dtype.itemsize, data.strides[0],
+                                         ffi.cast('void*', data.values.ctypes.data))
+
+    lib.odc_encode_to_file_descriptor(encoder, f.fileno(), ffi.NULL)
+
+
+def decode_dataframes(source, columns=None):
+    r = Reader(source)
+    for f in r.frames:
+        yield f.dataframe()
 
 
 def decode_dataframe(source, columns=None):
-
-    o = Odb(source)
-
-    assert len(o.frames) == 1
-    return o.frames[0].dataframe(columns=columns)
+    return reduce(lambda df1, df2: df1.append(df2), decode_dataframes(source, columns))

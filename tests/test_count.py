@@ -1,11 +1,13 @@
+
+import odyssey as odyssey_python
+import codyssey
+odyssey_modules = [odyssey_python, codyssey]
+
 import pandas
-
 import pytest
-# import codyssey as odyssey
-import odyssey
 
-
-def test_count():
+@pytest.mark.parametrize("odyssey", odyssey_modules)
+def test_count(odyssey):
 
     print("We are here")
     print(odyssey.__version__)
@@ -20,7 +22,8 @@ def test_count():
     assert sum (t.nrows for t in frames) == 1382274
 
 
-def test_count_file():
+@pytest.mark.parametrize("odyssey", odyssey_modules)
+def test_count_file(odyssey):
     """Check that we can open a file like object"""
     with open('/home/simon/testcases/odb/BTEM.2.odb', 'rb') as f:
         r = odyssey.Reader(f, aggregated=False)
@@ -52,7 +55,8 @@ def test_count_file():
 #        # print(df['seqno@hdr'])
 
 
-def test_encode():
+@pytest.mark.parametrize("odyssey", odyssey_modules)
+def test_encode(odyssey):
     data = {
         'col1': [1, 2, 3, 4, 5, 6, 7],
         'col2': [0, 0, 0, 0, 0, 0, 0],
@@ -88,3 +92,6 @@ def test_encode():
         df3 = odyssey.decode_dataframe(f, columns=('col6', 'col7'))
         print(df3)
 
+
+if __name__ == "__main__":
+    pytest.main()
