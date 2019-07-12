@@ -1,3 +1,4 @@
+from tempfile import NamedTemporaryFile
 
 import odyssey as odyssey_python
 import codyssey
@@ -82,15 +83,16 @@ def test_encode(odyssey):
         # 'col21': odyssey.REAL
     }
 
-    with open('abcdef.odb', 'wb') as f:
-        odyssey.encode_dataframe(df, f, types=types, rows_per_table=4)
+    with NamedTemporaryFile() as fencode:
+        odyssey.encode_dataframe(df, fencode, types=types, rows_per_table=4)
+        fencode.flush()
 
-    df2 = odyssey.decode_dataframe('abcdef.odb')
-    print(df2)
+        df2 = odyssey.decode_dataframe(fencode.name)
+        print(df2)
 
-    with open('abcdef.odb', 'rb') as f:
-        df3 = odyssey.decode_dataframe(f, columns=('col6', 'col7'))
-        print(df3)
+        with open(fencode.name, 'rb') as fread:
+            df3 = odyssey.decode_dataframe(fread, columns=('col6', 'col7'))
+            print(df3)
 
 
 if __name__ == "__main__":
