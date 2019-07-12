@@ -6,6 +6,11 @@ odyssey_modules = [odyssey_python, codyssey]
 
 import pandas
 import pytest
+import os
+
+
+data_file1 = os.path.join(os.path.dirname(__file__), 'data/data1.odb')
+
 
 @pytest.mark.parametrize("odyssey", odyssey_modules)
 def test_count(odyssey):
@@ -13,26 +18,37 @@ def test_count(odyssey):
     print("We are here")
     print(odyssey.__version__)
 
-    r = odyssey.Reader("/home/simon/testcases/odb/BTEM.2.odb", aggregated=False)
-    # o = odyssey.Odb("/home/ma/mass/testcases/odb_play/BTEM.2.odb")
+    r = odyssey.Reader(data_file1, aggregated=False)
 
     frames = r.frames
 
-    assert len(frames) == 221
-    assert all (t.ncolumns == 113 for t in frames)
-    assert sum (t.nrows for t in frames) == 1382274
+    assert len(frames) == 11
+    assert all (t.ncolumns == 55 for t in frames)
+    assert sum (t.nrows for t in frames) == 13
 
 
 @pytest.mark.parametrize("odyssey", odyssey_modules)
 def test_count_file(odyssey):
     """Check that we can open a file like object"""
-    with open('/home/simon/testcases/odb/BTEM.2.odb', 'rb') as f:
+    with open(data_file1, 'rb') as f:
         r = odyssey.Reader(f, aggregated=False)
 
     frames = r.frames
-    assert len(frames) == 221
-    assert all (t.ncolumns == 113 for t in frames)
-    assert sum (t.nrows for t in frames) == 1382274
+    assert len(frames) == 11
+    assert all (t.ncolumns == 55 for t in frames)
+    assert sum (t.nrows for t in frames) == 13
+
+
+@pytest.mark.parametrize("odyssey", odyssey_modules)
+def test_count_aggregated_file(odyssey):
+    """Check that we can open a file like object"""
+    with open(data_file1, 'rb') as f:
+        r = odyssey.Reader(f, aggregated=True)
+
+    frames = r.frames
+    assert len(frames) == 1
+    assert all (t.ncolumns == 55 for t in frames)
+    assert sum (t.nrows for t in frames) == 13
 
 #
 #def test_column_metadata():

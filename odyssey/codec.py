@@ -459,8 +459,8 @@ def read_codec(stream):
         bitFieldNames = [stream.readString() for _ in range(stream.readInt32())]
         bitFieldSizes = [stream.readInt32() for _ in range(stream.readInt32())]
     else:
-        bitFieldNames = None
-        bitFieldSizes = None
+        bitFieldNames = []
+        bitFieldSizes = []
 
     codec_class = stream.readString()
     codec_class = globals()[Codec.codec_class_name(codec_class)]

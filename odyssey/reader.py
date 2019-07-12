@@ -1,4 +1,4 @@
-from .frame import Frame
+from .frame import Frame, MismatchedFramesError
 
 from functools import reduce
 import io
@@ -15,9 +15,6 @@ class Reader:
         else:
             self._f = open(source, 'rb')
 
-        if self.__aggregated:
-            raise NotImplementedError("Aggregated reader not yet implemented in python")
-
         while True:
             try:
                 self._frames.append(Frame(self._f))
@@ -26,6 +23,17 @@ class Reader:
                 # n.b. f.read() does not throw EOFError, so this will only catch the exception
                 # thrown internally when the table marker is not found
                 break
+
+        if self.__aggregated:
+            if len(self._frames) > 1:
+                aggregated_frames = [self._frames[0]]
+                for frame in self._frames[1:]:
+                    try:
+                        aggregated_frames[-1]._append(frame)
+                    except MismatchedFramesError:
+                        aggregated_frames.append(frame)
+                self._frames = aggregated_frames
+
 
     @property
     def frames(self):

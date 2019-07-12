@@ -14,8 +14,13 @@ from .stream import BigEndianStream, LittleEndianStream
 from .constants import TYPE_NAMES, BITFIELD, MAGIC, ENDIAN_MARKER, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR, NEW_HEADER
 from .codec import read_codec
 
+from collections import Iterable
 from itertools import accumulate, chain
 import pandas as pd
+
+
+class MismatchedFramesError(ValueError):
+    pass
 
 
 class ColumnInfo:
@@ -29,26 +34,38 @@ class ColumnInfo:
             self.size = size
             self.offset = offset
 
-    def __init__(self, name, idx, type, datasize, bitfields):
+        def __eq__(self, other):
+            return (self.name == other.name and
+                    self.size == other.size and
+                    self.offset == other.offset)
+
+    def __init__(self, name, idx, typ, datasize, bitfields):
         self.name = name
-        self.type = type
+        self.typ = typ
         self.index = idx
         self.datasize = datasize
         self.bitfields = bitfields
-        assert (type == BITFIELD) != (bitfields is None)
+        assert (typ == BITFIELD) != (len(bitfields) == 0)
         if self.bitfields:
             assert isinstance(self.bitfields, Iterable)
             assert all(isinstance(b, ColumnInfo.Bitfield) for b in self.bitfields)
 
     def __str__(self):
-        if self.bitfields is not None:
-            bitfield_str = "(" + ",".join("{}:{}".format(b[0], b[1]) for b in self.bitfields) + ")"
+        if self.typ == BITFIELD:
+            bitfield_str = "(" + ",".join("{}:{}".format(b.name, b.size) for b in self.bitfields) + ")"
         else:
             bitfield_str = ""
-        return "{}:{}{}".format(self.name, TYPE_NAMES.get(self.type, '<unknown>'), bitfield_str)
+        return "{}:{}{}".format(self.name, TYPE_NAMES.get(self.typ, '<unknown>'), bitfield_str)
 
     def __repr__(self):
         return str(self)
+
+    def __eq__(self, other):
+        return (self.name == other.name and
+                self.typ == other.typ and
+                self.index == other.index and    # This may be overzealous?
+                self.datasize == other.datasize and
+                self.bitfields == other.bitfields)
 
 
 
@@ -103,6 +120,9 @@ class Frame:
 
         self._stream = stream
 
+        # Support frame aggregation
+        self._trailingAggregatedFrames = []
+
     def seekToEnd(self):
         self._stream.seek(self._dataEndPosition)
 
@@ -141,7 +161,7 @@ class Frame:
 
     @property
     def nrows(self):
-        return self._numberOfRows
+        return self._numberOfRows + sum(f.nrows for f in self._trailingAggregatedFrames)
 
     @property
     def ncolumns(self):
@@ -182,4 +202,15 @@ class Frame:
             last = output_cols[col][-1]
             output_cols[col].extend(last for _ in range(self._numberOfRows - lastDecoded[col] - 1))
 
-        return pd.DataFrame(output)
+        df = pd.DataFrame(output)
+
+        if len(self._trailingAggregatedFrames) > 0:
+            return pd.concat([df] + [f.dataframe() for f in self._trailingAggregatedFrames], copy=False, axis=0)
+        else:
+            return df
+
+    def _append(self, frame: 'Frame'):
+        if self.column_dict != frame.column_dict:
+            raise MismatchedFramesError
+        self._trailingAggregatedFrames.append(frame)
+
