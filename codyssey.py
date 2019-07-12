@@ -15,7 +15,6 @@
 from collections import Iterable
 
 import cffi
-import ctypes.util
 import pandas
 import numpy
 import io
@@ -24,10 +23,6 @@ from functools import reduce
 from pkg_resources import parse_version
 
 __version__ = "0.99.0"
-
-print(ctypes.util.find_library("odccore"))
-
-# TODO: Fallback to the python api
 
 ffi = cffi.FFI()
 
