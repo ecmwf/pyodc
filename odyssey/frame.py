@@ -172,13 +172,15 @@ class Frame:
     def dataframe(self, columns=None):
         """
         Actually decode the data!
+        TODO: Properly skip decoding columns that aren't needed
         """
-        columns = self._column_codecs
+        column_codecs = self._column_codecs
 
         self._stream.seek(self._dataStartPosition)
 
         output_cols = [[] for _ in range(self._numberOfColumns)]
-        output = {c.column_name: data for c, data in zip(columns, output_cols)}
+        output = {c.column_name: data for c, data in zip(column_codecs, output_cols)
+                  if columns is None or c.column_name in columns}
         lastDecoded = [0] * self._numberOfColumns
 
         lastStartCol = 0
@@ -195,7 +197,7 @@ class Frame:
             lastStartCol = startCol
 
             for col in range(startCol, self._numberOfColumns):
-                output_cols[col].append(columns[col].decode(self._stream))
+                output_cols[col].append(column_codecs[col].decode(self._stream))
                 lastDecoded[col] = row
 
         for col in range(lastStartCol):

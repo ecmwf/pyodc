@@ -100,14 +100,14 @@ def test_encode(odyssey):
     }
 
     with NamedTemporaryFile() as fencode:
-        odyssey.encode_dataframe(df, fencode, types=types, rows_per_table=4)
+        odyssey.encode_odb(df, fencode, types=types, rows_per_table=4)
         fencode.flush()
 
-        df2 = odyssey.decode_dataframe(fencode.name)
+        df2 = odyssey.read_odb(fencode.name)
         print(df2)
 
         with open(fencode.name, 'rb') as fread:
-            df3 = odyssey.decode_dataframe(fread, columns=('col6', 'col7'))
+            df3 = odyssey.read_odb(fread, columns=('col6', 'col7'))
             print(df3)
 
 

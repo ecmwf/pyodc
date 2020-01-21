@@ -9,17 +9,22 @@ import numpy as np
 import io
 
 
-def encode_dataframe(dataframe: pd.DataFrame, f: io.IOBase, rows_per_table=10000, types=None, bigendian: bool=False):
+def encode_odb(dataframe: pd.DataFrame, f, rows_per_frame=10000, types=None, bigendian: bool=False):
     """
     :param dataframe: A pandas dataframe to encode
     :param f: A file-like object to write the encoded data to
     :param columns: A dict of (optional) column-name : constant DataType pairs, or None
     :param bigendian: Encode in big- endian byte order if True
     """
+    if not isinstance(f, io.IOBase):
+        assert isinstance(f, str)
+        with open(f, 'wb') as freal:
+            return encode_odb(dataframe, freal, rows_per_frame=rows_per_frame, types=types, bigendian=bigendian)
+
     column_order = None
 
     # Split the dataframe into chunks of appropriate size
-    for i, sub_df in dataframe.groupby(np.arange(len(dataframe)) // rows_per_table):
+    for i, sub_df in dataframe.groupby(np.arange(len(dataframe)) // rows_per_frame):
         column_order = encode_single_dataframe(sub_df, f,
                                                types=types,
                                                column_order=column_order,

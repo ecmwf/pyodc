@@ -40,11 +40,11 @@ class Reader:
         return self._frames
 
 
-def decode_dataframes(source, columns=None):
+def read_odb(source, columns=None):
     r = Reader(source)
     for f in r.frames:
-        yield f.dataframe()
+        yield f.dataframe(columns)
 
 
-def decode_dataframe(source, columns=None):
-    return reduce(lambda df1, df2: df1.append(df2), decode_dataframes(source, columns))
+def read_odb_oneshot(source, columns=None):
+    return reduce(lambda df1, df2: df1.append(df2, sort=False), read_odb(source, columns))

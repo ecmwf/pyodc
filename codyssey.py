@@ -342,7 +342,7 @@ class Frame:
             return pandas.concat(dataframes, copy=False, axis=1)
 
 
-def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_per_frame=10000, **kwargs):
+def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, **kwargs):
     """
     Encode a pandas dataframe into ODB2 format
 
@@ -355,6 +355,10 @@ def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_
     :param kwargs: Accept extra arguments that may be used by the python odyssey encoder.
     :return:
     """
+    if not isinstance(source, io.IOBase):
+        assert isinstance(source, str)
+        with open(f, 'wb') as freal:
+            return encode_odb(df, freal, types=types, rows_per_frame=rows_per_frame, **kwargs)
 
     # Some constants that are useful
 
@@ -432,11 +436,11 @@ def encode_dataframe(df: pandas.DataFrame, f: io.IOBase, types: dict=None, rows_
     lib.odc_encode_to_file_descriptor(encoder, f.fileno(), ffi.NULL)
 
 
-def decode_dataframes(source, columns=None):
+def read_odb(source, columns=None):
     r = Reader(source)
     for f in r.frames:
         yield f.dataframe()
 
 
-def decode_dataframe(source, columns=None):
-    return reduce(lambda df1, df2: df1.append(df2), decode_dataframes(source, columns))
+def read_odb_oneshot(source, columns=None):
+    return reduce(lambda df1, df2: df1.append(df2, sort=False), read_odb(source, columns))
