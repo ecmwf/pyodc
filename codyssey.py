@@ -21,6 +21,7 @@ import io
 import os
 from functools import reduce
 from pkg_resources import parse_version
+from enum import IntEnum, unique
 
 __version__ = "0.99.0"
 
@@ -76,13 +77,13 @@ class PatchedLib:
         if parse_version(versionstr) < parse_version(__version__):
             raise RuntimeError("Version of libodc found is too old. {} < {}".format(versionstr, __version__))
 
-    def type_name(self, typ: int):
+    def type_name(self, typ: 'DataType'):
         name = self.__type_names.get(typ, None)
         if name is not None:
             return name
 
         name_tmp = ffi.new('char**')
-        self.odc_type_name(typ, name_tmp)
+        self.odc_column_type_name(typ, name_tmp)
         name = ffi.string(name_tmp[0]).decode('utf-8')
         self.__type_names[typ] = name
         return name
@@ -126,12 +127,21 @@ lib = PatchedLib()
 
 # Construct lookups/constants as is useful
 
-IGNORE = lib.ODC_IGNORE
-INTEGER = lib.ODC_INTEGER
-DOUBLE = lib.ODC_DOUBLE
-REAL = lib.ODC_REAL
-STRING = lib.ODC_STRING
-BITFIELD = lib.ODC_BITFIELD
+@unique
+class DataType(IntEnum):
+    IGNORE = lib.ODC_IGNORE
+    INTEGER = lib.ODC_INTEGER
+    DOUBLE = lib.ODC_DOUBLE
+    REAL = lib.ODC_REAL
+    STRING = lib.ODC_STRING
+    BITFIELD = lib.ODC_BITFIELD
+
+IGNORE = DataType.IGNORE
+INTEGER = DataType.INTEGER
+REAL = DataType.REAL
+STRING = DataType.STRING
+BITFIELD = DataType.BITFIELD
+DOUBLE = DataType.DOUBLE
 
 
 class Reader:
@@ -140,9 +150,10 @@ class Reader:
     __reader = None
     __frames = None
 
-    def __init__(self, source, aggregated=True):
+    def __init__(self, source, aggregated=True, max_aggregated=-1):
 
         self.__aggregated = aggregated
+        self.__max_aggregated = max_aggregated
 
         reader = ffi.new('odc_reader_t**')
         if isinstance(source, io.IOBase):
@@ -162,7 +173,7 @@ class Reader:
             frame = ffi.new('odc_frame_t**')
             lib.odc_new_frame(frame, self.__reader)
             frame = ffi.gc(frame[0], lib.odc_free_frame)
-            while (lib.odc_next_frame_aggregated(frame, -1) if self.__aggregated else lib.odc_next_frame(frame)) != lib.ODC_ITERATION_COMPLETE:
+            while (lib.odc_next_frame_aggregated(frame, self.__max_aggregated) if self.__aggregated else lib.odc_next_frame(frame)) != lib.ODC_ITERATION_COMPLETE:
 
                 copy_frame = ffi.new('odc_frame_t**')
                 lib.odc_copy_frame(frame, copy_frame)
@@ -195,7 +206,7 @@ class ColumnInfo:
             bitfield_str = "(" + ",".join("{}:{}".format(b[0], b[1]) for b in self.bitfields) + ")"
         else:
             bitfield_str = ""
-        return "{}:{}{}".format(self.name, lib.type_name(self.typ), bitfield_str)
+        return "{}:{}{}".format(self.name, self.typ, bitfield_str)
 
     def __repr__(self):
         return str(self)
@@ -217,9 +228,9 @@ class Frame:
             ptype = ffi.new('int*')
             pdatasize = ffi.new('int*')
             pbitfield_count = ffi.new('int*')
-            lib.odc_frame_column_attrs(self.__frame, col, pname, ptype, pdatasize, pbitfield_count)
+            lib.odc_frame_column_attributes(self.__frame, col, pname, ptype, pdatasize, pbitfield_count)
             name = ffi.string(pname[0]).decode('utf-8')
-            typ = int(ptype[0])
+            typ = DataType(int(ptype[0]))
             datasize = int(pdatasize[0])
             bitfield_count = int(pbitfield_count[0])
             bitfields = None
@@ -236,7 +247,7 @@ class Frame:
                     pbitfield_name = ffi.new('const char**')
                     poffset = ffi.new('int*')
                     psize = ffi.new('int*')
-                    lib.odc_frame_bitfield_attrs(self.__frame, col, n, pbitfield_name, poffset, psize)
+                    lib.odc_frame_bitfield_attributes(self.__frame, col, n, pbitfield_name, poffset, psize)
 
                     bitfields.append(ColumnInfo.Bitfield(
                         name=ffi.string(pbitfield_name[0]).decode('utf-8'),
@@ -272,6 +283,15 @@ class Frame:
         return int(count[0])
 
     def dataframe(self, columns=None):
+
+        # Some constants that are useful
+
+        pmissing_integer = ffi.new('long*')
+        pmissing_double = ffi.new('double*')
+        lib.odc_missing_integer(pmissing_integer)
+        lib.odc_missing_double(pmissing_double)
+        missing_integer = pmissing_integer[0]
+        missing_double = pmissing_double[0]
 
         if columns is None:
             columns = [c.name for c in self.columns]
@@ -319,8 +339,8 @@ class Frame:
                 for i, col in enumerate(cols):
 
                     lib.odc_decoder_add_column(decoder, col.name.encode('utf-8'))
-                    lib.odc_decoder_column_set_attrs(decoder, pos, dsize, strides[0],
-                                                     ffi.cast('void*', pointer + (i * strides[1])))
+                    lib.odc_decoder_column_set_data_array(decoder, pos, dsize, strides[0],
+                                                          ffi.cast('void*', pointer + (i * strides[1])))
                     pos += 1
 
                 dataframes.append(pandas.DataFrame(array, columns=[c.name for c in cols], copy=False))
@@ -333,6 +353,18 @@ class Frame:
         prows_decoded = ffi.new('long*')
         lib.odc_decode_threaded(decoder, self.__frame, prows_decoded, threads)
         assert prows_decoded[0] == self.nrows
+
+        # Update the missing values (n.b., still sorted by type), and decode strings
+
+        for i in range(len(dataframes)):
+            df = dataframes[i]
+            if df.dtypes[0] == numpy.int64:
+                df.mask(df == missing_integer, inplace=True)
+            elif df.dtypes[0] == numpy.double:
+                df.mask(df == missing_double, inplace=True)
+            else:
+                # This is a bit yucky, but I haven't found any other way to decode from b'' strings to real ones
+                dataframes[i] = df.apply(lambda x: x.astype('object').str.decode('utf-8'))
 
         # And construct the DataFrame from the decoded data
 
@@ -355,8 +387,8 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
     :param kwargs: Accept extra arguments that may be used by the python odyssey encoder.
     :return:
     """
-    if not isinstance(source, io.IOBase):
-        assert isinstance(source, str)
+    if not isinstance(f, io.IOBase):
+        assert isinstance(f, str)
         with open(f, 'wb') as freal:
             return encode_odb(df, freal, types=types, rows_per_frame=rows_per_frame, **kwargs)
 
@@ -391,6 +423,7 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
                     return_arr = arr.fillna(value=missing_integer).astype('int64')
                 else:
                     typ = DOUBLE
+                    return_arr = arr.fillna(value=missing_double)
             elif arr.dtype == 'object':
                 if not arr.isnull().all() and all(s is None or isinstance(s, str) for s in arr):
                     typ = STRING
@@ -430,14 +463,14 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
         data_cache.append(data)
 
         lib.odc_encoder_add_column(encoder, name.encode('utf-8'), typ)
-        lib.odc_encoder_column_set_attrs(encoder, i, data.dtype.itemsize, data.strides[0],
-                                         ffi.cast('void*', data.values.ctypes.data))
+        lib.odc_encoder_column_set_data_array(encoder, i, data.dtype.itemsize, data.strides[0],
+                                              ffi.cast('void*', data.values.ctypes.data))
 
     lib.odc_encode_to_file_descriptor(encoder, f.fileno(), ffi.NULL)
 
 
-def read_odb(source, columns=None):
-    r = Reader(source)
+def read_odb(source, columns=None, aggregated=True, max_aggregated=-1):
+    r = Reader(source, aggregated=aggregated)
     for f in r.frames:
         yield f.dataframe()
 

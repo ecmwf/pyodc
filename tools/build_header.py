@@ -5,7 +5,7 @@ from pycparser import parse_file, c_generator
 
 def usage():
     sys.stderr.write('Usage:\n')
-    sys.stderr.write('    build_header.py <odc.h> <odc_cffi.h>')
+    sys.stderr.write('    build_header.py <odc.h> <odc_cffi.h>\n')
 
 if len(sys.argv) != 3:
     usage()

@@ -6,7 +6,7 @@ import io
 
 class Reader:
 
-    def __init__(self, source, aggregated=False):
+    def __init__(self, source, aggregated=True):
         self.__aggregated = aggregated
         self._frames = []
 
@@ -40,8 +40,8 @@ class Reader:
         return self._frames
 
 
-def read_odb(source, columns=None):
-    r = Reader(source)
+def read_odb(source, columns=None, aggregated=True):
+    r = Reader(source, aggregated=aggregated)
     for f in r.frames:
         yield f.dataframe(columns)
 
