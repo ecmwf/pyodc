@@ -9,15 +9,16 @@ import numpy as np
 import io
 
 
-def encode_odb(dataframe: pd.DataFrame, f, rows_per_frame=10000, types=None, bigendian: bool=False):
+def encode_odb(dataframe: pd.DataFrame, f, rows_per_frame=10000, types=None, bigendian: bool=False,
+               properties: dict=None):
     """
     :param dataframe: A pandas dataframe to encode
     :param f: A file-like object to write the encoded data to
     :param columns: A dict of (optional) column-name : constant DataType pairs, or None
     :param bigendian: Encode in big- endian byte order if True
+    :param properties: Encode a dictionary of supplied properties
     """
-    if not isinstance(f, io.IOBase):
-        assert isinstance(f, str)
+    if isinstance(f, str):
         with open(f, 'wb') as freal:
             return encode_odb(dataframe, freal, rows_per_frame=rows_per_frame, types=types, bigendian=bigendian)
 
@@ -28,10 +29,12 @@ def encode_odb(dataframe: pd.DataFrame, f, rows_per_frame=10000, types=None, big
         column_order = encode_single_dataframe(sub_df, f,
                                                types=types,
                                                column_order=column_order,
-                                               bigendian=bigendian)
+                                               bigendian=bigendian,
+                                               properties=(properties or {}))
 
 
-def encode_single_dataframe(dataframe: pd.DataFrame, f, types: dict=None, column_order: list=None, bigendian: bool=False):
+def encode_single_dataframe(dataframe: pd.DataFrame, f, types: dict=None, column_order: list=None,
+                            bigendian: bool=False, properties: dict=None):
     """
     :param dataframe: A pandas dataframe to encode
     :param f: A file-like object to write the encoded data to
@@ -39,6 +42,7 @@ def encode_single_dataframe(dataframe: pd.DataFrame, f, types: dict=None, column
     :param column_order: A list of column names specifying the encode order. If None, optimise according
                          to the rate of value changes in the columns
     :param bigendian: Encode in big- endian byte order if True
+    :param properties: Encode a dictionary of supplied properties
     :return: The column order used for encoding as a list of column names
     """
 
@@ -60,7 +64,7 @@ def encode_single_dataframe(dataframe: pd.DataFrame, f, types: dict=None, column
         assert len(column_order) == len(set(column_order))
 
     data = _encodeData(dataframe, codecs, stream_class)
-    headerPart2 = _encodeHeaderPart2(dataframe, codecs, stream_class, len(data))
+    headerPart2 = _encodeHeaderPart2(dataframe, codecs, stream_class, len(data), (properties or {}))
     headerPart1 = _encodeHeaderPart1(headerPart2, stream_class)
 
     f.write(headerPart1)
@@ -104,7 +108,7 @@ def _encodeData(dataframe, codecs, stream_class):
     return dataIO.getbuffer()
 
 
-def _encodeHeaderPart2(dataframe, codecs, stream_class, data_len):
+def _encodeHeaderPart2(dataframe, codecs, stream_class, data_len, properties):
     """
     Encode the second part of the header - whose size and md5 is required to encode
     the first part of the header.
@@ -123,7 +127,12 @@ def _encodeHeaderPart2(dataframe, codecs, stream_class, data_len):
 
     # Flags... --> Currently no flags, no properties (remember to update Header Length)
     stream.encodeInt32(0)
-    stream.encodeInt32(0)
+
+    # Externally specified properties
+    stream.encodeInt32(len(properties))
+    for k, v in properties.items():
+        stream.encodeString(k)
+        stream.encodeString(v)
 
     # Number of columns
     stream.encodeInt32(dataframe.shape[1])

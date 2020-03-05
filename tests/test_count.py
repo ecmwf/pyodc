@@ -99,8 +99,13 @@ def test_encode(odyssey):
         # 'col21': odyssey.REAL
     }
 
+    properties = {
+        'property1': 'this is a string ....',
+        'property2': '.......and another .......',
+    }
+
     with NamedTemporaryFile() as fencode:
-        odyssey.encode_odb(df, fencode, types=types, rows_per_table=4)
+        odyssey.encode_odb(df, fencode, types=types, rows_per_frame=4, properties=properties)
         fencode.flush()
 
         df2 = odyssey.read_odb(fencode.name)

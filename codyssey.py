@@ -374,7 +374,7 @@ class Frame:
             return pandas.concat(dataframes, copy=False, axis=1)
 
 
-def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, **kwargs):
+def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, properties=None, **kwargs):
     """
     Encode a pandas dataframe into ODB2 format
 
@@ -387,8 +387,7 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
     :param kwargs: Accept extra arguments that may be used by the python odyssey encoder.
     :return:
     """
-    if not isinstance(f, io.IOBase):
-        assert isinstance(f, str)
+    if isinstance(f, str):
         with open(f, 'wb') as freal:
             return encode_odb(df, freal, types=types, rows_per_frame=rows_per_frame, **kwargs)
 
@@ -449,6 +448,9 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
     encoder = ffi.new('odc_encoder_t**')
     lib.odc_new_encoder(encoder)
     encoder = ffi.gc(encoder[0], lib.odc_free_encoder)
+
+    for k, v in (properties or {}).items():
+        lib.odc_encoder_add_property(encoder, k.encode('utf-8'), v.encode('utf-8'))
 
     lib.odc_encoder_set_row_count(encoder, nrows)
     lib.odc_encoder_set_rows_per_frame(encoder, rows_per_frame)

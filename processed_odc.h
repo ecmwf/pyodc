@@ -3,6 +3,7 @@ const int ODC_INTEGERS_AS_LONGS = 2;
 int odc_initialise_api();
 int odc_integer_behaviour(int integerBehaviour);
 int odc_version(const char **version);
+int odc_vcs_version(const char **version);
 enum OdcErrorValues
 {
   ODC_SUCCESS = 0,
@@ -68,6 +69,7 @@ struct odc_encoder_t;
 typedef struct odc_encoder_t odc_encoder_t;
 int odc_new_encoder(odc_encoder_t **encoder);
 int odc_free_encoder(const odc_encoder_t *encoder);
+int odc_encoder_add_property(odc_encoder_t *encoder, const char *key, const char *value);
 int odc_encoder_set_row_count(odc_encoder_t *encoder, long nrows);
 int odc_encoder_set_rows_per_frame(odc_encoder_t *encoder, long rows_per_frame);
 int odc_encoder_set_data_array(odc_encoder_t *encoder, const void *data, long width, long height, int columnMajorWidth);
