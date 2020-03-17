@@ -23,7 +23,7 @@ from functools import reduce
 from pkg_resources import parse_version
 from enum import IntEnum, unique
 
-__version__ = "0.99.0"
+__version__ = "1.0.2"
 
 ffi = cffi.FFI()
 
@@ -70,9 +70,6 @@ class PatchedLib:
         tmp_str = ffi.new('char**')
         self.odc_version(tmp_str)
         versionstr = ffi.string(tmp_str[0]).decode('utf-8')
-
-        v1 = parse_version(versionstr)
-        v2 = parse_version(__version__)
 
         if parse_version(versionstr) < parse_version(__version__):
             raise RuntimeError("Version of libodc found is too old. {} < {}".format(versionstr, __version__))
