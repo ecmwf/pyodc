@@ -4,39 +4,23 @@ Installation
 
 The package is installed from PyPI with::
 
-    $ pip install odyssey
+    $ pip install pyodc
 
 
 System dependencies
 -------------------
 
-The Python module depends on the ECMWF *odc* library
-that must be installed on the system and accessible as a shared library.
-#$Some Linux distributions ship a binary version that may be installed with the standard package manager.
-#$On Ubuntu 18.04 use the command::
-#$
-#$    $ sudo apt-get install libeccodes0
-#$
-#$On a MacOS with HomeBrew use::
-#$
-#$    $ brew install eccodes
-#$
-#$Or if you manage binary packages with *Conda* use::
-#$
-#$    $ conda install -c conda-forge eccodes
-#$
-#$As an alternative you may install the official source distribution
-#$by following the instructions at
-#$https://software.ecmwf.int/wiki/display/ECC/ecCodes+installation
-#$
-#$Note that *ecCodes* support for the Windows operating system is experimental.
-#$
-#$You may run a simple selfcheck command to ensure that your system is set up correctly::
-#$
-#$    $ python -m odyssey selfcheck
-#$    Found: ecCodes v2.7.0.
-#$    Your system is ready.
-#$
+The package contains two different implementations of the same library.
+
+pyodc is a pure-python encoder and decoder for ODB2 data, which encodes data
+from, and decodes it into pandas dataframes.
+
+codc is an implementation of the same API as pyodc that depends on the ECMWF
+*odc* library. This must be complied and installed on the system and made
+available to python (through the CFFI mechanism) as a shared library. This
+may involve adding its location to the LD_LIBRARY_PATH variable.
+
+The odc library may be found at https://github.com/ecmwf/odc
 
 Contributing
 ============
