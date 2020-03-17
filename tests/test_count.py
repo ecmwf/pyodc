@@ -50,27 +50,6 @@ def test_count_aggregated_file(odyssey):
     assert all (t.ncolumns == 55 for t in frames)
     assert sum (t.nrows for t in frames) == 13
 
-#
-#def test_column_metadata():
-#
-#    o = odyssey.Odb("/home/simon/testcases/odb/BTEM.2.odb")
-#    # o = odyssey.Odb("/home/simon/git/odb/python-simpleodb/testout.odb")
-#
-#    t = o.frames[0]
-#
-#    # df = o.tables[1].dataframe(columns=('seqno', 'obsvalue', 'statid', 'groupid', 'reportype', 'lat'))
-#
-#    with pandas.option_context('display.max_rows', None, 'display.max_columns', None):
-#        t = o.frames[0]
-#        df = t.dataframe(columns=('seqno', 'obsvalue', 'statid', 'groupid', 'reportype', 'lat'))
-#        # df = t.dataframe()
-#        print(df.shape)
-#        # print(o.tables[0].dataframe())
-#        # print(o.tables[1].dataframe())
-#
-#        # print(df[df.keys()[0]   ])
-#        # print(df['seqno@hdr'])
-
 
 @pytest.mark.parametrize("odyssey", odyssey_modules)
 def test_encode(odyssey):
