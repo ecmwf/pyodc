@@ -22,13 +22,13 @@ def parse_version_from(path):
 
 setuptools.setup(
     name='odyssey',
-    version=parse_version_from('codyssey.py'),
+    version=parse_version_from('codc.py'),
     description='Python interface to odc for encoding/decoding ODB files'
     long_description=read('README.rst') + read('CHANGELOG.rst'),
     author='European Centre for Medium-Range Weather Forecasts (ECMWF)',
     author_email='software.support@ecmwf.int',
     license='Apache License Version 2.0',
-    url='https://github.com/ecmwf/odyssey',
+    url='https://github.com/ecmwf/pyodc',
     packages=setuptools.find_packages(),
     include_package_data=True,
     setup_requires=[
