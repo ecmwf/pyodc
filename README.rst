@@ -28,7 +28,7 @@ Contributing
 The main repository is hosted on GitHub,
 testing, bug reports and contributions are highly welcomed and appreciated:
 
-https://github.com/ecmwf/odyssey
+https://github.com/ecmwf/pyodc
 
 Please see the CONTRIBUTING.rst document for the best way to help.
 
@@ -40,7 +40,7 @@ Main contributors:
 
 - Baudouin Raoult - `ECMWF <https://ecmwf.int>`_
 
-See also the list of `contributors <https://github.com/ecmwf/odyssey/contributors>`_ who participated in this project.
+See also the list of `contributors <https://github.com/ecmwf/pyodc/contributors>`_ who participated in this project.
 
 
 License
