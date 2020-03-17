@@ -23,7 +23,7 @@ from functools import reduce
 from pkg_resources import parse_version
 from enum import IntEnum, unique
 
-__version__ = "1.0.0"
+__version__ = '1.0.0'
 
 __odc_version__ = "1.0.2"
 
@@ -383,7 +383,7 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
                   encode to an ODB2 data type to use to encode it.
     :param rows_per_frame: The maximum number of rows to encode per frame. If this number is exceeded,
                            a sequence of frames will be encoded
-    :param kwargs: Accept extra arguments that may be used by the python odyssey encoder.
+    :param kwargs: Accept extra arguments that may be used by the python pyodc encoder.
     :return:
     """
     if isinstance(f, str):

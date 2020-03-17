@@ -1,8 +1,8 @@
 
-Changelog for odyssey
+Changelog for pyodc
 =====================
 
-0.19.0.1 (unreleased)
+1.0.0
 --------------------
 
 - Initial version
