@@ -23,7 +23,7 @@ from functools import reduce
 from pkg_resources import parse_version
 from enum import IntEnum, unique
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 __odc_version__ = "1.0.2"
 
