@@ -19,13 +19,12 @@ import pandas
 import numpy
 import io
 import os
+import sys
 from functools import reduce
 from pkg_resources import parse_version
 from enum import IntEnum, unique
 
-__version__ = '1.0.0'
-
-__odc_version__ = "1.0.2"
+__odc_version__ = '1.0.2'
 
 ffi = cffi.FFI()
 
@@ -46,7 +45,7 @@ class PatchedLib:
     def __init__(self):
 
         ffi.cdef(self.__read_header())
-        self.__lib = ffi.dlopen('libodccore.so')
+        self.__lib = ffi.dlopen(self.__find_library('libodccore'))
 
         # Todo: Version check against __version__
 
@@ -86,6 +85,34 @@ class PatchedLib:
         name = ffi.string(name_tmp[0]).decode('utf-8')
         self.__type_names[typ] = name
         return name
+
+    def __find_library(self, lib_file_base):
+        # Find appropriate file suffix based on what platform we
+        # are running on
+        if 'linux' in sys.platform:
+            lib_sfx = '.so'
+        elif 'darwin' in sys.platform:
+            lib_sfx = '.dylib'
+        elif 'win' in sys.platform:
+            lib_sfx = '.DLL'
+        else:
+            raise Exception("Don't know lib extension for platform " + sys.platform)
+
+        # Look through sys.paths for the file.
+        lib_full_path = None;
+        lib_file = lib_file_base + lib_sfx
+        for dirpath in sys.path:
+            test_path = os.path.join(dirpath, lib_file)
+            if (os.path.exists(test_path)):
+                lib_full_path = test_path
+                break
+
+        # lib_full_path will either be None (couldn't find the library)
+        # or a full path to the library file.
+        if (lib_full_path is None):
+            raise Exception("Cannot find libaray file: " + lib_file)
+
+        return lib_full_path
 
     def __read_header(self):
         with open(os.path.join(os.path.dirname(__file__), 'processed_odc.h'), 'r') as f:
