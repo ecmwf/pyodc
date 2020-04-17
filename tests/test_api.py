@@ -2,7 +2,7 @@ import pytest
 
 import pyodc
 import codc
-odc_modules = [pyodc, codyssey]
+odc_modules = [pyodc, codc]
 
 def exception_map(module, exception):
     return codc.ODCException if module == codc else exception

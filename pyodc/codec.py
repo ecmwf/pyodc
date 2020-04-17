@@ -207,7 +207,7 @@ class OffsetInteger(NumericBase):
 
 class Int8(OffsetInteger):
 
-    max_range = 0xf100
+    max_range = 0xff
     accepts_missing = False
 
     @staticmethod
@@ -220,14 +220,14 @@ class Int8(OffsetInteger):
 
 
 class Int8Missing(Int8):
-    max_range = 0xff
+    max_range = 0xfe
     accepts_missing = True
     internal_missing_value = 0xff
 
 
 class Int16(OffsetInteger):
 
-    max_range = 0xf10000
+    max_range = 0xffff
     accepts_missing = False
 
     @staticmethod
@@ -240,14 +240,14 @@ class Int16(OffsetInteger):
 
 
 class Int16Missing(Int16):
-    max_range = 0xffff
+    max_range = 0xfffe
     accepts_missing = True
-    internal_missing_value = 0xff
+    internal_missing_value = 0xffff
 
 
 class Int32(NumericBase):
 
-    max_range = 0xffffffff
+    max_range = 0xfffffffe
     accepts_missing = True
     internal_missing_value = 0x7fffffff
     accepted_types = (DataType.INTEGER, DataType.BITFIELD)
@@ -375,7 +375,7 @@ class Int16String(Int8String):
 
     @staticmethod
     def _encode(stream, value):
-        stream.encodeUInt8(value)
+        stream.encodeUInt16(value)
 
     @staticmethod
     def _decode(stream):
@@ -395,7 +395,6 @@ def select_codec(column_name: str, data: pd.Series, data_type):
             else:
                 data_type = DataType.DOUBLE
         elif data.dtype == 'float32':
-            print("fl", column_name)
             data_type = DataType.REAL
         elif data.dtype == 'object':
             if not data.isnull().all() and all(s is None or isinstance(s, str) for s in data):
@@ -418,7 +417,7 @@ def select_codec(column_name: str, data: pd.Series, data_type):
         has_missing = data.hasnans
 
         for c in [Int8, Int8Missing, Int16, Int16Missing, Int32]:
-            if range <= c.max_range and has_missing == c.accepts_missing:
+            if range <= c.max_range and (c.accepts_missing or not has_missing):
                 codec_class = c
                 break
 
