@@ -45,7 +45,10 @@ class PatchedLib:
     def __init__(self):
 
         ffi.cdef(self.__read_header())
-        self.__lib = ffi.dlopen('libodccore')
+        if 'linux' in sys.platform:
+            self.__lib = ffi.dlopen('libodccore.so')
+        else:
+            self.__lib = ffi.dlopen('libodccore')
 
         # Todo: Version check against __version__
 
