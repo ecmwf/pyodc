@@ -34,6 +34,10 @@ class ODCException(RuntimeError):
     pass
 
 
+class CFFIModuleLoadFailed(ODCException):
+    pass
+
+
 class PatchedLib:
     """
     Patch a CFFI library with error handling
@@ -46,7 +50,10 @@ class PatchedLib:
     def __init__(self):
 
         ffi.cdef(self.__read_header())
-        self.__lib = ffi.dlopen('libodccore.so')
+        try:
+            self.__lib = ffi.dlopen('libodccore.so')
+        except Exception as e:
+            raise CFFIModuleLoadFailed() from e
 
         # Todo: Version check against __version__
 
@@ -122,7 +129,10 @@ def memoize_constant(fn):
 
 # Bootstrap the library
 
-lib = PatchedLib()
+try:
+    lib = PatchedLib()
+except CFFIModuleLoadFailed as e:
+    raise ImportError() from e
 
 # Construct lookups/constants as is useful
 
