@@ -480,11 +480,19 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
     lib.odc_encode_to_file_descriptor(encoder, f.fileno(), ffi.NULL)
 
 
-def read_odb(source, columns=None, aggregated=True, max_aggregated=-1):
-    r = Reader(source, aggregated=aggregated)
+def _read_odb_generator(source, columns=None, aggregated=True, max_aggregated=-1):
+    r = Reader(source, aggregated=aggregated, max_aggregated=max_aggregated)
     for f in r.frames:
         yield f.dataframe()
 
 
-def read_odb_oneshot(source, columns=None):
+def _read_odb_oneshot(source, columns=None):
     return reduce(lambda df1, df2: df1.append(df2, sort=False), read_odb(source, columns))
+
+def read_odb(source, columns=None, aggregated=True, single=False, max_aggregated=-1):
+    if single:
+        assert aggregated
+        return _read_odb_oneshot(source, columns)
+    else:
+        return _read_odb_generator(source, columns, aggregated, max_aggregated)
+

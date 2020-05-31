@@ -40,11 +40,20 @@ class Reader:
         return self._frames
 
 
-def read_odb(source, columns=None, aggregated=True):
+def _read_odb_generator(source, columns=None, aggregated=True):
     r = Reader(source, aggregated=aggregated)
     for f in r.frames:
         yield f.dataframe(columns)
 
 
-def read_odb_oneshot(source, columns=None):
+def _read_odb_oneshot(source, columns=None):
     return reduce(lambda df1, df2: df1.append(df2, sort=False), read_odb(source, columns))
+
+
+def read_odb(source, columns=None, aggregated=True, single=False):
+    if single:
+        assert aggregated
+        return _read_odb_oneshot(source, columns)
+    else:
+        return _read_odb_generator(source, columns, aggregated)
+
