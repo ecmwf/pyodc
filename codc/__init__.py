@@ -5,4 +5,4 @@ from .encoder import encode_odb
 from .reader import Reader, read_odb
 from .lib import ODCException
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
