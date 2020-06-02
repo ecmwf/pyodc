@@ -207,7 +207,7 @@ class Frame:
         df = pd.DataFrame(output)
 
         if len(self._trailingAggregatedFrames) > 0:
-            return pd.concat([df] + [f.dataframe() for f in self._trailingAggregatedFrames], copy=False, axis=0)
+            return pd.concat([df] + [f.dataframe(columns) for f in self._trailingAggregatedFrames], copy=False, axis=0)
         else:
             return df
 
