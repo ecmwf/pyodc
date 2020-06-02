@@ -94,7 +94,7 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
         data_cache.append(data)
 
         lib.odc_encoder_add_column(encoder, name.encode('utf-8'), dtype)
-        lib.odc_encoder_column_set_data_array(encoder, i, data.dtype.itemsize, data.strides[0],
+        lib.odc_encoder_column_set_data_array(encoder, i, data.dtype.itemsize, data.array.to_numpy().strides[0],
                                               ffi.cast('void*', data.values.ctypes.data))
 
     lib.odc_encode_to_file_descriptor(encoder, f.fileno(), ffi.NULL)
