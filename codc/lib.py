@@ -43,7 +43,7 @@ class PatchedLib:
 
         ffi.cdef(self.__read_header())
         try:
-            self.__lib = ffi.dlopen('libodccore.so')
+            self.__lib = ffi.dlopen('odccore')
         except Exception as e:
             raise CFFIModuleLoadFailed() from e
 
