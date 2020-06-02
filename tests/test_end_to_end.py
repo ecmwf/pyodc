@@ -97,3 +97,34 @@ def test_encode_decode_simple_columns(odyssey):
 
         for col in COLS:
             numpy.testing.assert_array_equal(df[col], df2[col])
+
+
+@pytest.mark.parametrize("odyssey", odc_modules)
+def test_aggregate_non_matching(odyssey):
+    '''
+    Where we aggregate tables with non-matching columns, ensure that the infilled
+    missing values are type appropriate
+    '''
+
+    SAMPLE1 = {
+        'col1': [111, 222, 333]
+    }
+
+    SAMPLE2 = {
+        'col2': ['aaa', 'bbb', 'ccc']
+    }
+
+    with NamedTemporaryFile() as fencode:
+
+        odyssey.encode_odb(pandas.DataFrame(SAMPLE1), fencode)
+        odyssey.encode_odb(pandas.DataFrame(SAMPLE2), fencode)
+        fencode.flush()
+
+        df = odyssey.read_odb(fencode.name, single=True)
+        assert isinstance(df, pandas.DataFrame)
+
+        assert df['col1'].dtype == 'float64'
+        assert df['col2'].dtype == 'object'
+        assert df['col2'][0] is None
+        numpy.testing.assert_array_equal(df['col1'], [111., 222., 333., numpy.nan, numpy.nan, numpy.nan])
+        numpy.testing.assert_array_equal(df['col2'], [None, None, None, 'aaa', 'bbb', 'ccc'])

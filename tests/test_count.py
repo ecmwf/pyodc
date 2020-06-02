@@ -14,8 +14,8 @@ data_file1 = os.path.join(os.path.dirname(__file__), 'data/data1.odb')
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_count(odyssey):
 
-    print("We are here")
-    print(odyssey.__version__)
+    # print("We are here")
+    # print(odyssey.__version__)
 
     r = odyssey.Reader(data_file1, aggregated=False)
 

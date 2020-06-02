@@ -2,7 +2,7 @@
 from .lib import lib, ffi
 from .frame import Frame
 
-from functools import reduce
+import pandas
 import io
 
 class Reader:
@@ -50,7 +50,11 @@ def _read_odb_generator(source, columns=None, aggregated=True, max_aggregated=-1
 
 
 def _read_odb_oneshot(source, columns=None):
-    return reduce(lambda df1, df2: df1.append(df2, sort=False, ignore_index=True), _read_odb_generator(source, columns))
+    reduced = pandas.concat(_read_odb_generator(source, columns), sort=False, ignore_index=True)
+    for name, data in reduced.iteritems():
+        if data.dtype == 'object':
+            data.where(pandas.notnull(data), None, inplace=True)
+    return reduced
 
 
 def read_odb(source, columns=None, aggregated=True, single=False, max_aggregated=-1):
