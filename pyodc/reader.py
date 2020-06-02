@@ -47,7 +47,7 @@ def _read_odb_generator(source, columns=None, aggregated=True):
 
 
 def _read_odb_oneshot(source, columns=None):
-    return reduce(lambda df1, df2: df1.append(df2, sort=False), read_odb(source, columns))
+    return reduce(lambda df1, df2: df1.append(df2, sort=False, ignore_index=True), _read_odb_generator(source, columns))
 
 
 def read_odb(source, columns=None, aggregated=True, single=False):

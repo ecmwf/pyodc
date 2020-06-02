@@ -121,7 +121,6 @@ class Frame:
 
         if columns is None:
             columns = [c.name for c in self.columns]
-            print("Using default columns (all)")
 
         assert columns is not None
 
@@ -197,7 +196,7 @@ class Frame:
         # And construct the DataFrame from the decoded data
 
         if len(dataframes) == 1:
-            return dataframes[1]
+            return dataframes[0]
         else:
             return pandas.concat(dataframes, copy=False, axis=1)
 

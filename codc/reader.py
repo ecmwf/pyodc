@@ -46,11 +46,11 @@ class Reader:
 def _read_odb_generator(source, columns=None, aggregated=True, max_aggregated=-1):
     r = Reader(source, aggregated=aggregated, max_aggregated=max_aggregated)
     for f in r.frames:
-        yield f.dataframe()
+        yield f.dataframe(columns)
 
 
 def _read_odb_oneshot(source, columns=None):
-    return reduce(lambda df1, df2: df1.append(df2, sort=False), read_odb(source, columns))
+    return reduce(lambda df1, df2: df1.append(df2, sort=False, ignore_index=True), _read_odb_generator(source, columns))
 
 
 def read_odb(source, columns=None, aggregated=True, single=False, max_aggregated=-1):
