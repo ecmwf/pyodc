@@ -29,8 +29,8 @@ setuptools.setup(
     author_email='software.support@ecmwf.int',
     license='Apache License Version 2.0',
     url='https://github.com/ecmwf/pyodc',
-    packages=['pyodc'],
-    py_modules=['codc'],
+    packages=['pyodc', 'codc'],
+    package_data={ '': ['*.h'] },
     include_package_data=True,
     setup_requires=[
         'pytest-runner',
