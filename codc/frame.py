@@ -190,7 +190,9 @@ class Frame:
                 df.mask(df == missing_double, inplace=True)
             else:
                 # This is a bit yucky, but I haven't found any other way to decode from b'' strings to real ones
-                dataframes[i] = df.apply(lambda x: x.astype('object').str.decode('utf-8'))
+                # Also note, result_type added to work around bug in pandas
+                # https://github.com/pandas-dev/pandas/issues/34529
+                dataframes[i] = df.apply(lambda x: x.astype('object').str.decode('utf-8'), result_type='expand')
 
         # And construct the DataFrame from the decoded data
 
