@@ -39,30 +39,30 @@ class ColumnInfo:
                     self.size == other.size and
                     self.offset == other.offset)
 
-    def __init__(self, name, idx, typ, datasize, bitfields):
+    def __init__(self, name, idx, dtype, datasize, bitfields):
         self.name = name
-        self.typ = typ
+        self.dtype = dtype
         self.index = idx
         self.datasize = datasize
         self.bitfields = bitfields
-        assert (typ == BITFIELD) != (len(bitfields) == 0)
+        assert (dtype == BITFIELD) != (len(bitfields) == 0)
         if self.bitfields:
             assert isinstance(self.bitfields, Iterable)
             assert all(isinstance(b, ColumnInfo.Bitfield) for b in self.bitfields)
 
     def __str__(self):
-        if self.typ == BITFIELD:
+        if self.dtype == BITFIELD:
             bitfield_str = "(" + ",".join("{}:{}".format(b.name, b.size) for b in self.bitfields) + ")"
         else:
             bitfield_str = ""
-        return "{}:{}{}".format(self.name, TYPE_NAMES.get(self.typ, '<unknown>'), bitfield_str)
+        return "{}:{}{}".format(self.name, TYPE_NAMES.get(self.dtype, '<unknown>'), bitfield_str)
 
     def __repr__(self):
         return str(self)
 
     def __eq__(self, other):
         return (self.name == other.name and
-                self.typ == other.typ and
+                self.dtype == other.dtype and
                 self.index == other.index and    # This may be overzealous?
                 self.datasize == other.datasize and
                 self.bitfields == other.bitfields)
