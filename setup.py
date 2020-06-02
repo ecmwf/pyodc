@@ -22,15 +22,15 @@ def parse_version_from(path):
 
 setuptools.setup(
     name='pyodc',
-    version=parse_version_from('codc.py'),
+    version=parse_version_from('codc/__init__.py'),
     description='Python interface to odc for encoding/decoding ODB files',
     long_description=read('README.rst') + read('CHANGELOG.rst'),
     author='European Centre for Medium-Range Weather Forecasts (ECMWF)',
     author_email='software.support@ecmwf.int',
     license='Apache License Version 2.0',
     url='https://github.com/ecmwf/pyodc',
-    packages=['pyodc'],
-    py_modules=['codc'],
+    packages=['pyodc', 'codc'],
+    package_data={ '': ['*.h'] },
     include_package_data=True,
     setup_requires=[
         'pytest-runner',
