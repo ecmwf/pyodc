@@ -42,10 +42,18 @@ class PatchedLib:
     def __init__(self):
 
         ffi.cdef(self.__read_header())
-        try:
-            self.__lib = ffi.dlopen('odccore')
-        except Exception as e:
-            raise CFFIModuleLoadFailed() from e
+        LIBNAMES = ['odccore', ]
+        if os.environ.get('ODC_DIR'):
+            LIBNAMES.insert(0, os.path.join(os.environ['ODC_DIR'], 'lib/libodccore.so'))
+            LIBNAMES.insert(0, os.path.join(os.environ['ODC_DIR'], 'lib64/libodccore.so'))
+        for libname in LIBNAMES:
+            try:
+                self.__lib = ffi.dlopen(libname)
+                break
+            except Exception as e:
+                last_exception = e
+        else:
+            raise CFFIModuleLoadFailed() from last_exception
 
         # Todo: Version check against __version__
 
