@@ -37,6 +37,7 @@ setuptools.setup(
     ],
     install_requires=[
         'cffi',
+        'pandas',
     ],
     extras_require={},
     tests_require=[
