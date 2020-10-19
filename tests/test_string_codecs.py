@@ -1,0 +1,54 @@
+import pytest
+
+from pyodc.constants import DataType
+from pyodc.stream import LittleEndianStream
+from pyodc import codec
+import pandas as pd
+import struct
+import io
+
+
+
+def _check_decode(cdc, encoded, check):
+
+    st = LittleEndianStream(encoded)
+    v = cdc.decode(st)
+    assert v == check
+
+
+def test_null_terminated_constant_string():
+    """
+    This tests the (somewhat dubious) 'missing' values in some (older) data
+    encoded from ODB-1 using odb2odb1. This data uses the integer missing value,
+    casted to a double, that happens to start with \x00 --> "NULL STRING"
+
+    We need to support decoding this data...
+    """
+    constant_value = struct.unpack('<d', b'\x00\x00\xc0\xff\xff\xff\xdfA')[0]
+    cdc = codec.ConstantString('column', constant_value, constant_value,
+                               DataType.STRING, has_missing=False)
+    encoded = b''
+
+    _check_decode(cdc, encoded, '')
+
+
+def test_stripped_constant_string():
+    constant_value = struct.unpack('<d', b'hello\x00\x00\x00')[0]
+    cdc = codec.ConstantString('column', constant_value, constant_value,
+                               DataType.STRING, has_missing=False)
+    encoded = b''
+
+    _check_decode(cdc, encoded, 'hello')
+
+
+def test_normal_constant_string():
+    constant_value = struct.unpack('<d', b'helloAAA')[0]
+    cdc = codec.ConstantString('column', constant_value, constant_value,
+                               DataType.STRING, has_missing=False)
+    encoded = b''
+
+    _check_decode(cdc, encoded, 'helloAAA')
+
+
+
+
