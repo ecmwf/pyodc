@@ -3,9 +3,28 @@ from .constants import *
 from .lib import ffi, lib, memoize_constant
 
 from collections import Iterable
+import codecs
 import numpy
 import pandas
 import os
+
+
+# A null-terminated UTF-8 decoder
+def null_utf_decoder(name):
+    if name == 'utf-8-null':
+
+        utf8_decoder = codecs.getdecoder('utf-8')
+
+        return codecs.CodecInfo(
+            name='utf-8-null',
+            encode=None,
+            decode=lambda b, e: utf8_decoder(b.split(b'\x00', 1)[0], e),
+            incrementalencoder=None,
+            incrementaldecoder=None,
+            streamwriter=None,
+            streamreader=None)
+
+codecs.register(null_utf_decoder)
 
 
 class ColumnInfo:
@@ -29,7 +48,7 @@ class ColumnInfo:
 
     def __str__(self):
         if self.bitfields is not None:
-            bitfield_str = "(" + ",".join("{}:{}".format(b[0], b[1]) for b in self.bitfields) + ")"
+            bitfield_str = "(" + ",".join("{}:{}".format(b.name, b.size) for b in self.bitfields) + ")"
         else:
             bitfield_str = ""
         return "{}:{}{}".format(self.name, self.dtype, bitfield_str)
@@ -191,7 +210,7 @@ class Frame:
                 # This is a bit yucky, but I haven't found any other way to decode from b'' strings to real ones
                 # Also note, result_type added to work around bug in pandas
                 # https://github.com/pandas-dev/pandas/issues/34529
-                dataframes[i] = df.apply(lambda x: x.astype('object').str.decode('utf-8'), result_type='expand')
+                dataframes[i] = df.apply(lambda x: x.astype('object').str.decode('utf-8-null'), result_type='expand')
 
         # And construct the DataFrame from the decoded data
 

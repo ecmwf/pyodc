@@ -120,7 +120,7 @@ class ConstantString(Constant):
         return cls(column_name, value, value, data_type)
 
     def decode(self, stream):
-        return struct.pack('<d', self.min).decode('utf-8').strip('\x00')
+        return struct.pack('<d', self.min).split(b'\x00', 1)[0].decode('utf-8')
 
 
 class NumericBase(Codec):
