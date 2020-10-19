@@ -42,11 +42,14 @@ class PatchedLib:
     def __init__(self):
 
         ffi.cdef(self.__read_header())
-        LIBNAMES = ['odccore', ]
-        if os.environ.get('ODC_DIR'):
-            LIBNAMES.insert(0, os.path.join(os.environ['ODC_DIR'], 'lib/libodccore.so'))
-            LIBNAMES.insert(0, os.path.join(os.environ['ODC_DIR'], 'lib64/libodccore.so'))
-        for libname in LIBNAMES:
+
+        libnames = ['odccore', ]
+        for env_var in ('ODC_DIR', 'odc_DIR'):
+            if os.environ.get(env_var):
+                libnames.insert(0, os.path.join(os.environ[env_var], 'lib/libodccore.so'))
+                libnames.insert(0, os.path.join(os.environ[env_var], 'lib64/libodccore.so'))
+
+        for libname in libnames:
             try:
                 self.__lib = ffi.dlopen(libname)
                 break
