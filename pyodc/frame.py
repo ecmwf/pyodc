@@ -14,7 +14,11 @@ from .stream import BigEndianStream, LittleEndianStream
 from .constants import TYPE_NAMES, BITFIELD, MAGIC, ENDIAN_MARKER, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR, NEW_HEADER
 from .codec import read_codec
 
-from collections import Iterable
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
+
 from itertools import accumulate, chain
 import pandas as pd
 

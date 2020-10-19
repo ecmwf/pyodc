@@ -2,7 +2,10 @@
 from .constants import *
 from .lib import ffi, lib, memoize_constant
 
-from collections import Iterable
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 import codecs
 import numpy
 import pandas
