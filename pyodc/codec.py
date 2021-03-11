@@ -407,27 +407,40 @@ def select_codec(column_name: str, data: pd.Series, data_type):
 
     codec_class = None
 
-    if data.nunique() == 1 and not data.hasnans:
-
-        codec_class = Constant
-
-    if data_type == DataType.INTEGER:
+    if data_type in (DataType.INTEGER, DataType.BITFIELD):
 
         range = data.max() - data.min()
         has_missing = data.hasnans
 
-        for c in [Int8, Int8Missing, Int16, Int16Missing, Int32]:
-            if range <= c.max_range and (c.accepts_missing or not has_missing):
-                codec_class = c
-                break
+        if data.nunique() == 1:
+            if data.hasnans:
+                codec_class = ConstantOrMissing
+            else:
+                codec_class = Constant
+        else:
+            for c in [Int8, Int8Missing, Int16, Int16Missing, Int32]:
+                if range <= c.max_range and (c.accepts_missing or not has_missing):
+                    codec_class = c
+                    break
 
     elif data_type == DataType.DOUBLE:
 
-        codec_class = LongReal
+        if data.nunique() == 1:
+            if data.hasnans:
+                codec_class = RealConstantOrMissing
+            else:
+                codec_class = Constant
+        else:
+            codec_class = LongReal
 
     elif data_type == DataType.REAL:
 
-        if INTERNAL_REAL_MISSING[1] in data:
+        if data.nunique() == 1:
+            if data.hasnans:
+                codec_class = RealConstantOrMissing
+            else:
+                codec_class = Constant
+        elif INTERNAL_REAL_MISSING[1] in data:
             if INTERNAL_REAL_MISSING[0] in data:
                 raise ValueError("Cannot encode a float data series with both internal missing values")
             codec_class = ShortReal
@@ -436,7 +449,9 @@ def select_codec(column_name: str, data: pd.Series, data_type):
 
     elif data_type == DataType.STRING:
 
-        if data.nunique() <= 256:
+        if data.nunique() == 1 and not data.hasnans:
+            codec_class = ConstantString
+        elif data.nunique() <= 256:
             codec_class = Int8String
         else:
             assert data.nunique() <= 32767
