@@ -2,6 +2,11 @@
 Changelog for pyodc
 =====================
 
+1.0.4
+--------------------
+
+- Correct support for constant codecs
+
 1.0.3
 --------------------
 
