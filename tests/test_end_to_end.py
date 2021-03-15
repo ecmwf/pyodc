@@ -1,12 +1,12 @@
 
-import pyodc
-import codc
-odc_modules = [pyodc, codc]
-
 from tempfile import NamedTemporaryFile
 import pandas
 import pytest
 import numpy.testing
+
+import pyodc
+import codc
+odc_modules = [pyodc, codc]
 
 
 SAMPLE_DATA = {
@@ -90,34 +90,33 @@ def test_encode_decode_simple_columns(odyssey):
     with NamedTemporaryFile() as fencode:
         df = encode_sample(odyssey, fencode)
 
-        COLS = ('col6', 'col7')
-        df2 = odyssey.read_odb(fencode.name, columns=COLS, single=True)
+        cols = ('col6', 'col7')
+        df2 = odyssey.read_odb(fencode.name, columns=cols, single=True)
         assert isinstance(df2, pandas.DataFrame)
-        assert df2.shape[1] == len(COLS)
+        assert df2.shape[1] == len(cols)
 
-        for col in COLS:
+        for col in cols:
             numpy.testing.assert_array_equal(df[col], df2[col])
 
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_aggregate_non_matching(odyssey):
-    '''
+    """
     Where we aggregate tables with non-matching columns, ensure that the infilled
     missing values are type appropriate
-    '''
-
-    SAMPLE1 = {
+    """
+    sample1 = {
         'col1': [111, 222, 333]
     }
 
-    SAMPLE2 = {
+    sample2 = {
         'col2': ['aaa', 'bbb', 'ccc']
     }
 
     with NamedTemporaryFile() as fencode:
 
-        odyssey.encode_odb(pandas.DataFrame(SAMPLE1), fencode)
-        odyssey.encode_odb(pandas.DataFrame(SAMPLE2), fencode)
+        odyssey.encode_odb(pandas.DataFrame(sample1), fencode)
+        odyssey.encode_odb(pandas.DataFrame(sample2), fencode)
         fencode.flush()
 
         df = odyssey.read_odb(fencode.name, single=True)
