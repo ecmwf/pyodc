@@ -6,6 +6,7 @@ Changelog for pyodc
 --------------------
 
 - Correct support for constant codecs
+- Decoding by column short name
 
 1.0.3
 --------------------
