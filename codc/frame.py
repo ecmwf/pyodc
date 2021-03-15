@@ -113,8 +113,21 @@ class Frame:
 
     @property
     @memoize_constant
+    def _simple_column_dict_ambiguous(self):
+        columns = {}
+        ambiguous_columns = []
+        for col in self.columns:
+            simple_name = col.name.split('@')[0]
+            if simple_name in columns:
+                ambiguous_columns.append(simple_name)
+            columns[simple_name] = col
+        return columns, ambiguous_columns
+
+    @property
+    @memoize_constant
     def simple_column_dict(self):
-        return {c.name.split('@')[0]: c for c in self.columns}
+        scd, ambiguous_columns = self._simple_column_dict_ambiguous
+        return scd
 
     @property
     @memoize_constant
@@ -147,7 +160,7 @@ class Frame:
         assert columns is not None
 
         cd = self.column_dict
-        scd = self.simple_column_dict
+        scd, ambiguous_columns = self._simple_column_dict_ambiguous
 
         # Keep track of the column names used, so we can return the correct (fully-qualified, or short)
         # column name for each column
@@ -158,6 +171,8 @@ class Frame:
             try:
                 col = cd[name]
             except KeyError:
+                if name in ambiguous_columns:
+                    raise KeyError("Ambiguous short column name '{}' requested".format(name))
                 col = scd[name]
             if col.dtype == INTEGER or col.dtype == BITFIELD:
                 integer_cols.append((name, col))

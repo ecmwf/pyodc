@@ -168,4 +168,8 @@ def test_unqualified_names(odyssey):
             'col4': sample['col4']
         })
         assert expected_df.equals(df)
-        
+
+        # What happens if we try and access an ambiguous columns?
+
+        with pytest.raises(KeyError):
+            odyssey.read_odb(fencode.name, single=True, columns=['col1'])
