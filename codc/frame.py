@@ -149,6 +149,8 @@ class Frame:
         cd = self.column_dict
         scd = self.simple_column_dict
 
+        # Keep track of the column names used, so we can return the correct (fully-qualified, or short)
+        # column name for each column
         integer_cols = []
         double_cols = []
         string_cols = {}
@@ -158,11 +160,11 @@ class Frame:
             except KeyError:
                 col = scd[name]
             if col.dtype == INTEGER or col.dtype == BITFIELD:
-                integer_cols.append(col)
+                integer_cols.append((name, col))
             elif col.dtype == REAL or col.dtype == DOUBLE:
-                double_cols.append(col)
+                double_cols.append((name, col))
             elif col.dtype == STRING:
-                string_cols.setdefault(col.datasize, []).append(col)
+                string_cols.setdefault(col.datasize, []).append((name, col))
 
         decoder = ffi.new('odc_decoder_t**')
         lib.odc_new_decoder(decoder)
@@ -183,14 +185,16 @@ class Frame:
                 pointer = array.ctypes.data
                 strides = array.ctypes.strides
 
-                for i, col in enumerate(cols):
+                colnames = []
+                for i, (name, col) in enumerate(cols):
 
+                    colnames.append(name)
                     lib.odc_decoder_add_column(decoder, col.name.encode('utf-8'))
                     lib.odc_decoder_column_set_data_array(decoder, pos, dsize, strides[0],
                                                           ffi.cast('void*', pointer + (i * strides[1])))
                     pos += 1
 
-                dataframes.append(pandas.DataFrame(array, columns=[c.name for c in cols], copy=False))
+                dataframes.append(pandas.DataFrame(array, columns=colnames, copy=False))
 
         try:
             threads = len(os.shed_getaffinity(0))

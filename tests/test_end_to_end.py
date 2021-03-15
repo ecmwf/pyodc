@@ -127,3 +127,45 @@ def test_aggregate_non_matching(odyssey):
         assert df['col2'][0] is None
         numpy.testing.assert_array_equal(df['col1'], [111., 222., 333., numpy.nan, numpy.nan, numpy.nan])
         numpy.testing.assert_array_equal(df['col2'], [None, None, None, 'aaa', 'bbb', 'ccc'])
+
+
+@pytest.mark.parametrize("odyssey", odc_modules)
+def test_unqualified_names(odyssey):
+    """
+    Check that we can extract columns by unqualified name, and by fully qualified name
+    (that is, where the name contains an '@', we can extract by short name
+    """
+    sample = {
+        'col1@tbl1': [11, 12, 13, 14, 15, 16],
+        'col2@tbl1': [21, 22, 23, 24, 25, 26],
+        'col1@tbl2': [31, 32, 33, 34, 35, 36],
+        'col3@tbl2': [41, 42, 43, 44, 45, 46],
+        'col4': [51, 52, 53, 54, 55, 56],
+    }
+
+    input_df = pandas.DataFrame(sample)
+
+    with NamedTemporaryFile() as fencode:
+        odyssey.encode_odb(input_df, fencode)
+        fencode.flush()
+
+        # Check fully-qualified naming
+
+        cols = ['col1@tbl1', 'col3@tbl2', 'col4']
+        df = odyssey.read_odb(fencode.name, single=True, columns=cols)
+        expected_df = input_df[cols]
+        assert expected_df.equals(df)
+
+        # Check quick-access naming
+
+        cols = ['col2', 'col3', 'col4']
+        df = odyssey.read_odb(fencode.name, single=True, columns=cols)
+        assert len(df.keys()) == 3
+        assert set(df.keys()) == set(cols)
+        expected_df = pandas.DataFrame({
+            'col2': sample['col2@tbl1'],
+            'col3': sample['col3@tbl2'],
+            'col4': sample['col4']
+        })
+        assert expected_df.equals(df)
+        
