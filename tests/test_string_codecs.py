@@ -66,7 +66,7 @@ def test_decode_odb1_missing_strings(odyssey):
     through the python API, as we (correctly) encode the missing value as a
     null string).
     """
-    with open(os.path.join(os.path.dirname(__file__), 'odb1_missing_string.odb'), 'rb') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'data/odb1_missing_string.odb'), 'rb') as f:
         df = odyssey.read_odb(f, single=True)
 
     assert df.shape == (4, 1)

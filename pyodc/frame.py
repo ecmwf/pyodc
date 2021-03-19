@@ -183,8 +183,23 @@ class Frame:
         self._stream.seek(self._dataStartPosition)
 
         output_cols = [[] for _ in range(self._numberOfColumns)]
-        output = {c.column_name: data for c, data in zip(column_codecs, output_cols)
-                  if columns is None or c.column_name in columns}
+
+        # Select the correct output columns. Note we allow selection of fully-qualified
+        # names, but we also allow selection of short names of the form <name>@<table> (so
+        # long as these names are not ambiguous
+        output = {}
+        for codec, output_col in zip(column_codecs, output_cols):
+            if columns is None or codec.column_name in columns:
+                output[codec.column_name] = output_col
+            else:
+                splitname = codec.column_name.split('@')
+                if len(splitname) == 2:
+                    name, table = splitname
+                    if name in columns:
+                        if name in output:
+                            raise KeyError("Ambiguous short column name '{}' requested".format(name))
+                        output[name] = output_col
+
         lastDecoded = [0] * self._numberOfColumns
 
         lastStartCol = 0
