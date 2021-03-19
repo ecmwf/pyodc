@@ -32,9 +32,6 @@ setuptools.setup(
     packages=['pyodc', 'codc'],
     package_data={ '': ['*.h'] },
     include_package_data=True,
-    setup_requires=[
-        'pytest-runner',
-    ],
     install_requires=[
         'cffi',
         'pandas',
