@@ -1,7 +1,7 @@
 pyodc
 =====
 
-Python API for handling ODB2 data.
+A python API for handling ODB2 data.
 
 The package contains two different implementations of the same library:
 
