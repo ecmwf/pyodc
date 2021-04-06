@@ -50,7 +50,6 @@ jupyter notebook Introduction.ipynb
 To run the unit tests, make sure that the `pytest` module is installed first:
 
 ```sh
-pip install --user pytest
 python -m pytest
 ```
 
