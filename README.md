@@ -1,10 +1,10 @@
 # pyodc
 
-A Python interface to odc for encoding/decoding ODB-2 files.
+A Python interface to odc for encoding/decoding ODB\-2 files.
 
 The package contains two different implementations of the same library:
 
-* `pyodc` is a pure-python encoder and decoder for ODB-2 data, which encodes data from, and decodes it into pandas data frames
+* `pyodc` is a pure-python encoder and decoder for ODB\-2 data, which encodes data from, and decodes it into pandas data frames
 * `codc` is an implementation of the same API as `pyodc` that depends on the ECMWF `odc` library, and comes with _much_ better performance
 
 ## Dependencies
