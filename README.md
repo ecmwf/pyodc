@@ -7,6 +7,8 @@ The package contains two different implementations of the same library:
 * `pyodc` is a pure-python encoder and decoder for ODB\-2 data, which encodes data from, and decodes it into pandas data frames
 * `codc` is an implementation of the same API as `pyodc` that depends on the ECMWF `odc` library, and comes with _much_ better performance
 
+[CHANGELOG]
+
 ## Dependencies
 
 ### Required
@@ -15,9 +17,9 @@ The package contains two different implementations of the same library:
 
 ### Optional
 
-* [odc](https://github.com/ecmwf/odc)
-* [pytest](https://pytest.org)
-* [Jupyter Notebook](https://jupyter.org)
+* [odc]
+* [pytest]
+* [Jupyter Notebook]
 
 In order for `codc` to work, the `odc` library must be compiled and installed on the system and made available to Python (through the CFFI mechanism) as a shared library.
 
@@ -55,4 +57,10 @@ python -m pytest
 
 ## License
 
-`pyodc` is distributed under the Apache license 2.0 - see the accompanying [LICENSE](./LICENSE) file for more details.
+`pyodc` is distributed under the Apache license 2.0 - see the accompanying [LICENSE] file for more details.
+
+[CHANGELOG]: ./CHANGELOG.md
+[LICENSE]: ./LICENSE
+[odc]: https://github.com/ecmwf/odc
+[pytest]: https://pytest.org
+[Jupyter Notebook]: https://jupyter.org
