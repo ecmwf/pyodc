@@ -1,6 +1,6 @@
 # pyodc
 
-A Python interface to odc for encoding/decoding ODB\-2 files.
+A Python interface to `odc` for encoding/decoding ODB\-2 files.
 
 The package contains two different implementations of the same library:
 
@@ -49,11 +49,26 @@ jupyter notebook Introduction.ipynb
 
 ## Development
 
+### Run Unit Tests
+
 To run the unit tests, make sure that the `pytest` module is installed first:
 
 ```sh
 python -m pytest
 ```
+
+### Build Documentation
+
+To build the documentation locally, please set up the environment first:
+
+```sh
+cd docs
+pip install -r requirements.txt
+pip install ..
+make html
+```
+
+The built HTML documentation will be available under the `docs/build/html/index.html` path.
 
 ## License
 

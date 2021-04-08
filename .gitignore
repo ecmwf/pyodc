@@ -1,3 +1,9 @@
 .idea/
 __pycache__
 *.pyc
+docs/_build/
+build/
+dist/
+*egg-info*
+.eggs
+.ipynb_checkpoints
