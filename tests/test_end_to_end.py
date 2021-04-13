@@ -4,6 +4,10 @@ import pandas
 import pytest
 import numpy.testing
 
+import pyodc
+import codc
+odc_modules = [pyodc, codc]
+
 
 SAMPLE_DATA = {
     'col1': [1, 2, 3, 4, 5, 6, 7],
@@ -43,6 +47,7 @@ def encode_sample(odyssey, f):
     return df
 
 
+@pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_filename(odyssey):
 
     with NamedTemporaryFile() as fencode:
@@ -60,6 +65,7 @@ def test_encode_decode_filename(odyssey):
                 numpy.testing.assert_array_equal(s1, s2)
 
 
+@pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_file_object(odyssey):
 
     with NamedTemporaryFile() as fencode:
@@ -78,6 +84,7 @@ def test_encode_decode_file_object(odyssey):
                 numpy.testing.assert_array_equal(s1, s2)
 
 
+@pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_simple_columns(odyssey):
 
     with NamedTemporaryFile() as fencode:
@@ -92,6 +99,7 @@ def test_encode_decode_simple_columns(odyssey):
             numpy.testing.assert_array_equal(df[col], df2[col])
 
 
+@pytest.mark.parametrize("odyssey", odc_modules)
 def test_aggregate_non_matching(odyssey):
     """
     Where we aggregate tables with non-matching columns, ensure that the infilled
@@ -121,6 +129,7 @@ def test_aggregate_non_matching(odyssey):
         numpy.testing.assert_array_equal(df['col2'], [None, None, None, 'aaa', 'bbb', 'ccc'])
 
 
+@pytest.mark.parametrize("odyssey", odc_modules)
 def test_unqualified_names(odyssey):
     """
     Check that we can extract columns by unqualified name, and by fully qualified name
