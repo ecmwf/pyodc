@@ -9,9 +9,6 @@ import io
 import os
 
 import pytest
-import pyodc
-import codc
-odc_modules = [pyodc, codc]
 
 
 def _check_decode(cdc, encoded, check):
@@ -55,7 +52,6 @@ def test_normal_constant_string():
     _check_decode(cdc, encoded, 'helloAAA')
 
 
-@pytest.mark.parametrize("odyssey", odc_modules)
 def test_decode_odb1_missing_strings(odyssey):
     """
     Tests that we can decode missing (NULL) strings from data encoded
