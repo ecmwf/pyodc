@@ -1,8 +1,6 @@
 from tempfile import NamedTemporaryFile
 
-import pyodc
-import codc
-odc_modules = [pyodc, codc]
+from conftest import odc_modules
 
 import pytest
 import os

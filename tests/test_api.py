@@ -1,11 +1,11 @@
 import pytest
 
-import pyodc
-import codc
-odc_modules = [pyodc, codc]
+from conftest import odc_modules, codc
+
 
 def exception_map(module, exception):
     return codc.ODCException if module == codc else exception
+
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_error_handling(odyssey):
