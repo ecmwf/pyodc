@@ -4,6 +4,7 @@ from conftest import odc_modules, codc
 
 
 def exception_map(module, exception):
+    if not codc: return exception
     return codc.ODCException if module == codc else exception
 
 

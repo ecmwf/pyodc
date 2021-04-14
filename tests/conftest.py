@@ -8,8 +8,12 @@ odc_modules = [pyodc]
 codc = None
 
 if 'PYODC_SKIP_CODC' not in os.environ:
-    import codc
-    odc_modules.append(codc)
+    try:
+        import codc
+        odc_modules.append(codc)
+    except:
+        msg = 'Could not import codc, do you have odc installed?\nTo skip codc tests, set PYODC_SKIP_CODC flag.'
+        pytest.exit(msg)
 
 
 def pytest_terminal_summary(terminalreporter):
