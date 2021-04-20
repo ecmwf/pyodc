@@ -20,7 +20,11 @@ def encode_odb(dataframe: pd.DataFrame, f, rows_per_frame=10000, types=None, big
     """
     if isinstance(f, str):
         with open(f, 'wb') as freal:
-            return encode_odb(dataframe, freal, rows_per_frame=rows_per_frame, types=types, bigendian=bigendian)
+            return encode_odb(dataframe, freal,
+                              rows_per_frame=rows_per_frame,
+                              types=types,
+                              bigendian=bigendian,
+                              properties=properties)
 
     column_order = None
 

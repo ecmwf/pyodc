@@ -4,7 +4,7 @@ import pandas
 import pytest
 import numpy.testing
 
-from conftest import odc_modules
+from conftest import odc_modules, codc
 
 
 SAMPLE_DATA = {
@@ -24,6 +24,11 @@ SAMPLE_DATA = {
     # 'col21': [None] * 7
 }
 
+SAMPLE_PROPERTIES = {
+    'property1': 'this is a string ....',
+    'property2': '.......and another .......',
+}
+
 
 def encode_sample(odyssey, f):
 
@@ -35,13 +40,13 @@ def encode_sample(odyssey, f):
         # 'col21': odyssey.REAL
     }
 
-    properties = {
-        'property1': 'this is a string ....',
-        'property2': '.......and another .......',
-    }
+    properties = SAMPLE_PROPERTIES
 
     odyssey.encode_odb(df, f, types=types, rows_per_frame=4, properties=properties)
-    f.flush()
+
+    if not isinstance(f, str):
+        f.flush()
+
     return df
 
 
@@ -171,3 +176,27 @@ def test_unqualified_names(odyssey):
 
         with pytest.raises(KeyError):
             odyssey.read_odb(fencode.name, single=True, columns=['col1'])
+
+
+@pytest.mark.parametrize('odyssey', odc_modules)
+def test_encode_decode_properties(odyssey):
+    """Check that additional properties are encoded and decoded properly."""
+
+    # TODO: Implement frame properties feature in odc library before enabling
+    #   the tests for codc module.
+    if odyssey == codc:
+        pytest.skip('Not implemented in codc yet')
+
+    with NamedTemporaryFile() as fencode:
+
+        # Test both by passing file handle and name to the encoding function.
+        #   Please see ODB-523 for more information.
+        for f in [fencode, fencode.name]:
+            encode_sample(odyssey, f)
+
+            reader = odyssey.Reader(fencode.name)
+
+            for frame in reader.frames:
+                assert frame.properties == SAMPLE_PROPERTIES
+
+        fencode.flush()
