@@ -4,9 +4,7 @@ import pandas
 import pytest
 import numpy.testing
 
-import pyodc
-import codc
-odc_modules = [pyodc, codc]
+from conftest import odc_modules
 
 
 SAMPLE_DATA = {

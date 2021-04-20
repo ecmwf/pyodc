@@ -9,9 +9,8 @@ import io
 import os
 
 import pytest
-import pyodc
-import codc
-odc_modules = [pyodc, codc]
+
+from conftest import odc_modules
 
 
 def _check_decode(cdc, encoded, check):
