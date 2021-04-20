@@ -187,7 +187,7 @@ def test_encode_decode_properties(odyssey):
     # TODO: Implement frame properties feature in odc library before enabling
     #   the tests for codc module.
     if odyssey == codc:
-        return
+        pytest.skip('Not implemented in codc yet')
 
     with NamedTemporaryFile() as fencode:
 
