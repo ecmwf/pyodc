@@ -154,7 +154,14 @@ class Frame:
         self._numberOfRows = stream.readInt64()
 
         self.flags = [stream.readReal64() for _ in range(stream.readInt32())]
-        self.properties = {stream.readString(): stream.readString() for _ in range(stream.readInt32())}
+
+        self.properties = {}
+
+        for _ in range(stream.readInt32()):
+            key = stream.readString()
+            value = stream.readString()
+            assert key not in self.properties
+            self.properties[key] = value
 
         self._numberOfColumns = stream.readInt32()
         self._columnPosition = stream.position()
