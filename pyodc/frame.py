@@ -160,6 +160,7 @@ class Frame:
         for _ in range(stream.readInt32()):
             key = stream.readString()
             value = stream.readString()
+            assert key not in self.properties
             self.properties[key] = value
 
         self._numberOfColumns = stream.readInt32()
