@@ -23,7 +23,7 @@ class Reader:
         if isinstance(source, io.IOBase):
             self._f = source
         else:
-            self._f = open(source, 'rb')
+            self._f = open(source, "rb")
 
         while True:
             try:
@@ -44,7 +44,6 @@ class Reader:
                         aggregated_frames.append(frame)
                 self._frames = aggregated_frames
 
-
     @property
     def frames(self):
         return self._frames
@@ -59,7 +58,7 @@ def _read_odb_generator(source, columns=None, aggregated=True):
 def _read_odb_oneshot(source, columns=None):
     reduced = pandas.concat(_read_odb_generator(source, columns), sort=False, ignore_index=True)
     for name, data in reduced.iteritems():
-        if data.dtype == 'object':
+        if data.dtype == "object":
             data.where(pandas.notnull(data), None, inplace=True)
     return reduced
 
@@ -82,4 +81,3 @@ def read_odb(source, columns=None, aggregated=True, single=False):
         return _read_odb_oneshot(source, columns)
     else:
         return _read_odb_generator(source, columns, aggregated)
-

@@ -5,9 +5,16 @@ import pandas as pd
 
 
 class Codec:
-
-    def __init__(self, column_name: str, minval: float, maxval: float, data_type: DataType, has_missing: bool=False,
-                 bitfield_names=None, bitfield_sizes=None):
+    def __init__(
+        self,
+        column_name: str,
+        minval: float,
+        maxval: float,
+        data_type: DataType,
+        has_missing: bool = False,
+        bitfield_names=None,
+        bitfield_sizes=None,
+    ):
         self.column_name = column_name
         self.min = minval
         self.max = maxval
@@ -21,18 +28,18 @@ class Codec:
             DataType.BITFIELD: MISSING_INTEGER,
             DataType.DOUBLE: MISSING_REAL,
             DataType.REAL: MISSING_REAL,
-            DataType.STRING: MISSING_STRING
+            DataType.STRING: MISSING_STRING,
         }[data_type]
 
         assert self.name is not None
 
     @property
     def name(self):
-        return ''.join('_' + c.lower() if c.isupper() else c for c in self.__class__.__name__).strip('_')
+        return "".join("_" + c.lower() if c.isupper() else c for c in self.__class__.__name__).strip("_")
 
     @staticmethod
     def codec_class_name(name):
-        return ''.join(part[:1].upper() + part[1:] for part in name.split("_"))
+        return "".join(part[:1].upper() + part[1:] for part in name.split("_"))
 
     @property
     def data_size(self):
@@ -66,8 +73,15 @@ class Codec:
     @classmethod
     def from_stream(cls, stream, column_name: str, data_type: DataType, bitfield_names, bitfield_sizes):
         has_missing, minval, maxval, missing_value = cls.read_core_header(stream)
-        return cls(column_name, minval, maxval, data_type, has_missing=has_missing,
-                   bitfield_names=bitfield_names, bitfield_sizes=bitfield_sizes)
+        return cls(
+            column_name,
+            minval,
+            maxval,
+            data_type,
+            has_missing=has_missing,
+            bitfield_names=bitfield_names,
+            bitfield_sizes=bitfield_sizes,
+        )
 
     def encode(self, stream, value):
         raise NotImplementedError
@@ -82,8 +96,8 @@ class Codec:
 
 # n.b. The codec names match the class names
 
-class Constant(Codec):
 
+class Constant(Codec):
     @classmethod
     def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
         assert data.nunique() == 1 and not data.hasnans
@@ -94,12 +108,9 @@ class Constant(Codec):
         pass
 
     def decode(self, stream):
-        return {
-            DataType.INTEGER: int,
-            DataType.REAL: float,
-            DataType.DOUBLE: float,
-            DataType.BITFIELD: int
-        }[self.type](self.min)
+        return {DataType.INTEGER: int, DataType.REAL: float, DataType.DOUBLE: float, DataType.BITFIELD: int}[self.type](
+            self.min
+        )
 
     @property
     def numChanges(self):
@@ -107,7 +118,6 @@ class Constant(Codec):
 
 
 class ConstantString(Constant):
-
     @classmethod
     def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
         assert data.nunique() == 1 and not data.hasnans
@@ -115,12 +125,12 @@ class ConstantString(Constant):
 
         # n.b. This looks like it ties it to little-endian, but it doesn't. Byte order
         #      is always the same for string data, but we are 'pretending' to be a double.
-        value = struct.unpack('<d', (next(iter(data)).encode('utf-8') + (b'\x00' * 8))[:8])[0]
+        value = struct.unpack("<d", (next(iter(data)).encode("utf-8") + (b"\x00" * 8))[:8])[0]
 
         return cls(column_name, value, value, data_type)
 
     def decode(self, stream):
-        return struct.pack('<d', self.min).split(b'\x00', 1)[0].decode('utf-8')
+        return struct.pack("<d", self.min).split(b"\x00", 1)[0].decode("utf-8")
 
 
 class NumericBase(Codec):
@@ -146,7 +156,7 @@ class NumericBase(Codec):
 
 class ConstantOrMissing(NumericBase):
 
-    internal_missing_value = 0xff
+    internal_missing_value = 0xFF
     accepted_types = (DataType.INTEGER, DataType.BITFIELD)
 
     @classmethod
@@ -165,12 +175,9 @@ class ConstantOrMissing(NumericBase):
         if marker == self.internal_missing_value:
             return None
         else:
-            return {
-                DataType.INTEGER: int,
-                DataType.REAL: float,
-                DataType.DOUBLE: float,
-                DataType.BITFIELD: int
-            }[self.type](self.min)
+            return {DataType.INTEGER: int, DataType.REAL: float, DataType.DOUBLE: float, DataType.BITFIELD: int}[
+                self.type
+            ](self.min)
 
 
 class RealConstantOrMissing(ConstantOrMissing):
@@ -207,7 +214,7 @@ class OffsetInteger(NumericBase):
 
 class Int8(OffsetInteger):
 
-    max_range = 0xff
+    max_range = 0xFF
     accepts_missing = False
 
     @staticmethod
@@ -220,14 +227,14 @@ class Int8(OffsetInteger):
 
 
 class Int8Missing(Int8):
-    max_range = 0xfe
+    max_range = 0xFE
     accepts_missing = True
-    internal_missing_value = 0xff
+    internal_missing_value = 0xFF
 
 
 class Int16(OffsetInteger):
 
-    max_range = 0xffff
+    max_range = 0xFFFF
     accepts_missing = False
 
     @staticmethod
@@ -240,21 +247,21 @@ class Int16(OffsetInteger):
 
 
 class Int16Missing(Int16):
-    max_range = 0xfffe
+    max_range = 0xFFFE
     accepts_missing = True
-    internal_missing_value = 0xffff
+    internal_missing_value = 0xFFFF
 
 
 class Int32(NumericBase):
 
-    max_range = 0xfffffffe
+    max_range = 0xFFFFFFFE
     accepts_missing = True
-    internal_missing_value = 0x7fffffff
+    internal_missing_value = 0x7FFFFFFF
     accepted_types = (DataType.INTEGER, DataType.BITFIELD)
 
     @classmethod
     def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
-        if data.min() < -0x80000000 or data.max() >= 0x7fffffff:
+        if data.min() < -0x80000000 or data.max() >= 0x7FFFFFFF:
             raise ValueError("Cannot encode integers out of range")
         c = super().from_dataframe(column_name, data, data_type)
         assert c.missing_value == c.internal_missing_value
@@ -336,8 +343,16 @@ class Int8String(Codec):
             idx = stream.readInt32()
             values[idx] = value
         assert not any(v is None for v in values)
-        return cls(column_name, minval, maxval, data_type, values=values, has_missing=has_missing,
-                   bitfield_names=bitfield_names, bitfield_sizes=bitfield_sizes)
+        return cls(
+            column_name,
+            minval,
+            maxval,
+            data_type,
+            values=values,
+            has_missing=has_missing,
+            bitfield_names=bitfield_names,
+            bitfield_sizes=bitfield_sizes,
+        )
 
     @staticmethod
     def _encode(stream, value):
@@ -372,7 +387,6 @@ class Int8String(Codec):
 
 
 class Int16String(Int8String):
-
     @staticmethod
     def _encode(stream, value):
         stream.encodeUInt16(value)
@@ -387,16 +401,16 @@ def select_codec(column_name: str, data: pd.Series, data_type):
     # If data types are not specified, determine them from the pandas Series
 
     if data_type is None:
-        if data.dtype in ["{}int{}".format(s, b) for s in ('', 'u') for b in (8, 16, 32, 64)]:
+        if data.dtype in ["{}int{}".format(s, b) for s in ("", "u") for b in (8, 16, 32, 64)]:
             data_type = DataType.INTEGER
-        elif data.dtype == 'float64':
+        elif data.dtype == "float64":
             if not data.isnull().all() and all(pd.isnull(v) or float(v).is_integer() for v in data):
                 data_type = DataType.INTEGER
             else:
                 data_type = DataType.DOUBLE
-        elif data.dtype == 'float32':
+        elif data.dtype == "float32":
             data_type = DataType.REAL
-        elif data.dtype == 'object':
+        elif data.dtype == "object":
             if not data.isnull().all() and all(s is None or isinstance(s, str) for s in data):
                 data_type = DataType.STRING
 
@@ -479,4 +493,3 @@ def read_codec(stream):
     codec_class = stream.readString()
     codec_class = globals()[Codec.codec_class_name(codec_class)]
     return codec_class.from_stream(stream, column_name, data_type, bitFieldNames, bitFieldSizes)
-
