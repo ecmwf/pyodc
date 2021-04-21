@@ -25,6 +25,7 @@ setuptools.setup(
     version=parse_version_from('codc/__init__.py'),
     description='A Python interface to odc for encoding/decoding ODB-2 files.',
     long_description=read('README.md') + read('CHANGELOG.md'),
+    long_description_content_type='text/markdown',
     author='European Centre for Medium-Range Weather Forecasts (ECMWF)',
     author_email='software.support@ecmwf.int',
     license='Apache License Version 2.0',

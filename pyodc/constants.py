@@ -27,13 +27,16 @@ ENDIAN_MARKER = 1
 
 @unique
 class DataType(IntEnum):
+    """
+    Defines the encoded data type for a specified column
+    """
 
-    IGNORE = 0
-    INTEGER = 1
-    REAL = 2
-    STRING = 3
-    BITFIELD = 4
-    DOUBLE = 5
+    IGNORE = 0 #: Ignore value
+    INTEGER = 1 #: Integer value
+    REAL = 2 #: Real value
+    STRING = 3 #: String value
+    BITFIELD = 4 #: Bitfield value
+    DOUBLE = 5 #: Double value
 
 IGNORE = DataType.IGNORE
 INTEGER = DataType.INTEGER
