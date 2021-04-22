@@ -4,7 +4,8 @@ from conftest import odc_modules, codc
 
 
 def exception_map(module, exception):
-    if not codc: return exception
+    if not codc:
+        return exception
     return codc.ODCException if module == codc else exception
 
 
@@ -12,4 +13,4 @@ def exception_map(module, exception):
 def test_error_handling(odyssey):
     """Ensure that exceptions in the C++ layer are caught and forwarded as python exceptions"""
     with pytest.raises(exception_map(odyssey, FileNotFoundError)):
-        r = odyssey.Reader("No such ODB file")
+        odyssey.Reader("No such ODB file")

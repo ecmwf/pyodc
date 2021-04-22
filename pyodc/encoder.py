@@ -1,5 +1,4 @@
-from .constants import (NEW_HEADER, MAGIC, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR,
-                        ENDIAN_MARKER)
+from .constants import NEW_HEADER, MAGIC, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR, ENDIAN_MARKER
 from .codec import select_codec
 from .stream import LittleEndianStream, BigEndianStream
 
@@ -9,8 +8,14 @@ import numpy as np
 import io
 
 
-def encode_odb(dataframe: pd.DataFrame, target, rows_per_frame=10000, types=None, bigendian: bool=False,
-               properties: dict=None):
+def encode_odb(
+    dataframe: pd.DataFrame,
+    target,
+    rows_per_frame=10000,
+    types=None,
+    bigendian: bool = False,
+    properties: dict = None,
+):
     """
     Encode a pandas dataframe into an ODB-2 stream
 
@@ -22,26 +27,38 @@ def encode_odb(dataframe: pd.DataFrame, target, rows_per_frame=10000, types=None
         properties(dict): Encode a dictionary of supplied properties
     """
     if isinstance(target, str):
-        with open(target, 'wb') as real_target:
-            return encode_odb(dataframe, real_target,
-                              rows_per_frame=rows_per_frame,
-                              types=types,
-                              bigendian=bigendian,
-                              properties=properties)
+        with open(target, "wb") as real_target:
+            return encode_odb(
+                dataframe,
+                real_target,
+                rows_per_frame=rows_per_frame,
+                types=types,
+                bigendian=bigendian,
+                properties=properties,
+            )
 
     column_order = None
 
     # Split the dataframe into chunks of appropriate size
     for i, sub_df in dataframe.groupby(np.arange(len(dataframe)) // rows_per_frame):
-        column_order = encode_single_dataframe(sub_df, target,
-                                               types=types,
-                                               column_order=column_order,
-                                               bigendian=bigendian,
-                                               properties=(properties or {}))
+        column_order = encode_single_dataframe(
+            sub_df,
+            target,
+            types=types,
+            column_order=column_order,
+            bigendian=bigendian,
+            properties=(properties or {}),
+        )
 
 
-def encode_single_dataframe(dataframe: pd.DataFrame, target, types: dict=None, column_order: list=None,
-                            bigendian: bool=False, properties: dict=None):
+def encode_single_dataframe(
+    dataframe: pd.DataFrame,
+    target,
+    types: dict = None,
+    column_order: list = None,
+    bigendian: bool = False,
+    properties: dict = None,
+):
     """
     Encode a single dataframe into an ODB-2 stream
 
@@ -109,7 +126,9 @@ def _encodeData(dataframe, codecs, stream_class):
     for row in dataframe.itertuples(index=False):
 
         for i, (codec, index) in enumerate(codec_indexes):
-            if last_row is None or (row[index] != last_row[index] and not (pd.isnull(row[index]) and pd.isnull(last_row[index]))):
+            if last_row is None or (
+                row[index] != last_row[index] and not (pd.isnull(row[index]) and pd.isnull(last_row[index]))
+            ):
                 break
 
         stream.encodeMarker(i)
@@ -185,6 +204,3 @@ def _encodeHeaderPart1(headerPart2, stream_class):
     stream.encodeInt32(len(headerPart2))
 
     return headerIO.getbuffer()
-
-
-

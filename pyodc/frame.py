@@ -11,7 +11,15 @@
 from __future__ import absolute_import
 
 from .stream import BigEndianStream, LittleEndianStream
-from .constants import TYPE_NAMES, BITFIELD, MAGIC, ENDIAN_MARKER, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR, NEW_HEADER
+from .constants import (
+    TYPE_NAMES,
+    BITFIELD,
+    MAGIC,
+    ENDIAN_MARKER,
+    FORMAT_VERSION_NUMBER_MAJOR,
+    FORMAT_VERSION_NUMBER_MINOR,
+    NEW_HEADER,
+)
 from .codec import read_codec
 
 try:
@@ -67,9 +75,7 @@ class ColumnInfo:
             self.offset = offset
 
         def __eq__(self, other):
-            return (self.name == other.name and
-                    self.size == other.size and
-                    self.offset == other.offset)
+            return self.name == other.name and self.size == other.size and self.offset == other.offset
 
     def __init__(self, name, idx, dtype, datasize, bitfields):
         self.name = name
@@ -88,17 +94,19 @@ class ColumnInfo:
             bitfield_str = "(" + ",".join("{}:{}".format(b.name, b.size) for b in self.bitfields) + ")"
         else:
             bitfield_str = ""
-        return "{}:{}{}".format(self.name, TYPE_NAMES.get(self.dtype, '<unknown>'), bitfield_str)
+        return "{}:{}{}".format(self.name, TYPE_NAMES.get(self.dtype, "<unknown>"), bitfield_str)
 
     def __repr__(self):
         return str(self)
 
     def __eq__(self, other):
-        return (self.name == other.name and
-                self.dtype == other.dtype and
-                self.index == other.index and    # This may be overzealous?
-                self.datasize == other.datasize and
-                self.bitfields == other.bitfields)
+        return (
+            self.name == other.name
+            and self.dtype == other.dtype
+            and self.index == other.index
+            and self.datasize == other.datasize  # This may be overzealous?
+            and self.bitfields == other.bitfields
+        )
 
 
 class Frame:
@@ -122,14 +130,14 @@ class Frame:
         m = source.read(2)
         if len(m) == 0:
             raise EOFError()
-        assert int.from_bytes(m, byteorder='big', signed=False) == NEW_HEADER
+        assert int.from_bytes(m, byteorder="big", signed=False) == NEW_HEADER
 
         assert source.read(3) == MAGIC
 
         # Get byte ordering
 
         endian_marker = source.read(4)
-        if int.from_bytes(endian_marker, byteorder='little') == ENDIAN_MARKER:
+        if int.from_bytes(endian_marker, byteorder="little") == ENDIAN_MARKER:
             stream = LittleEndianStream(source)
         else:
             stream = BigEndianStream(source)
@@ -138,7 +146,8 @@ class Frame:
         assert stream.readInt32() == FORMAT_VERSION_NUMBER_MAJOR
         assert stream.readInt32() == FORMAT_VERSION_NUMBER_MINOR
 
-        md5 = stream.readString()
+        # MD5 checksum
+        assert stream.readString()
 
         headerLength = stream.readInt32()
         self._dataStartPosition = stream.position() + headerLength
@@ -195,11 +204,20 @@ class Frame:
     @property
     def columns(self):
         return [
-            ColumnInfo(codec.column_name, idx, codec.type, codec.data_size,
-                       [ColumnInfo.Bitfield(name=nm, size=sz, offset=off)
-                        for nm, sz, off in zip(codec.bitfield_names,
-                                               codec.bitfield_sizes,
-                                               accumulate(chain([0]), codec.bitfield_sizes))])
+            ColumnInfo(
+                codec.column_name,
+                idx,
+                codec.type,
+                codec.data_size,
+                [
+                    ColumnInfo.Bitfield(name=nm, size=sz, offset=off)
+                    for nm, sz, off in zip(
+                        codec.bitfield_names,
+                        codec.bitfield_sizes,
+                        accumulate(chain([0]), codec.bitfield_sizes),
+                    )
+                ],
+            )
             for idx, codec in enumerate(self._column_codecs)
         ]
 
@@ -209,7 +227,7 @@ class Frame:
 
     @property
     def simple_column_dict(self):
-        return {c.name.split('@')[0]: c for c in self.columns}
+        return {c.name.split("@")[0]: c for c in self.columns}
 
     @property
     def nrows(self):
@@ -246,7 +264,7 @@ class Frame:
             if columns is None or codec.column_name in columns:
                 output[codec.column_name] = output_col
             else:
-                splitname = codec.column_name.split('@')
+                splitname = codec.column_name.split("@")
                 if len(splitname) == 2:
                     name, table = splitname
                     if name in columns:
@@ -280,12 +298,15 @@ class Frame:
         df = pd.DataFrame(output)
 
         if len(self._trailingAggregatedFrames) > 0:
-            return pd.concat([df] + [f.dataframe(columns) for f in self._trailingAggregatedFrames], copy=False, axis=0)
+            return pd.concat(
+                [df] + [f.dataframe(columns) for f in self._trailingAggregatedFrames],
+                copy=False,
+                axis=0,
+            )
         else:
             return df
 
-    def _append(self, frame: 'Frame'):
+    def _append(self, frame: "Frame"):
         if self.column_dict != frame.column_dict:
             raise MismatchedFramesError
         self._trailingAggregatedFrames.append(frame)
-
