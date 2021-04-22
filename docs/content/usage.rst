@@ -1,7 +1,7 @@
+.. index:: Usage
+
 Usage
 =====
-
-.. index:: Usage
 
 .. toctree::
    :maxdepth: 2

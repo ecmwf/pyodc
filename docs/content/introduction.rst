@@ -1,20 +1,20 @@
+.. index:: Introduction
+
 Introduction
 ============
-
-.. index:: Introduction
 
 ODB-2 is a compact data format suited for storage, transmission and archival of meteorological observation data in a tabular format, with each row corresponding to one observation. Observation is self-describing and can come from many different data sources and many types of instrument.
 
 **pyodc** provides a thin encoder and decoder to make ODB-2 data available for the **pandas** or **numpy** ecosystem. In addition to that, it also has an interface to explore the metadata without actually decoding ODB-2 data.
 
 
-ODB-2 Format Overview
----------------------
-
 .. index:: ODB-2
    single: ODB-2; Format
    single: ODB-2; Frame
    single: ODB-2; Header
+
+ODB-2 Format Overview
+---------------------
 
 An ODB-2 data stream is comprised of a sequence of frames. Each frame encodes a table of data, described by a header.
 

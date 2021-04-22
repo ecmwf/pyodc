@@ -1,7 +1,7 @@
+.. index:: API, module
+
 API
 ===
-
-.. index:: API, module
 
 pyodc
 -----

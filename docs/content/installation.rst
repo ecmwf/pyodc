@@ -1,24 +1,24 @@
 Installation
 ============
 
-Dependencies
-------------
-
 .. index:: Dependencies
 
-Required
-^^^^^^^^
+Dependencies
+------------
 
 .. index::
    single: Dependencies; Required
 
+Required
+^^^^^^^^
+
 * Python (3/3.5/3.6/3.7)
 
 
+.. index:: Dependencies; Optional
+
 Optional
 ^^^^^^^^
-
-.. index:: Dependencies; Optional
 
 * `odc`_ (>= 1.3.0)
 * `Jupyter Notebook`_
@@ -32,11 +32,11 @@ Optional
 .. _`Jupyter Notebook`: https://jupyter.org
 
 
-Python Package Installer
-------------------------
-
 .. index:: Installation
    single: Installation; PIP
+
+Python Package Installer
+------------------------
 
 Install the package via PIP:
 
@@ -53,12 +53,12 @@ Check if the module was installed correctly:
     >>> import codc # optional
 
 
-Conda Forge
------------
-
 .. index::
    single: Installation; Conda
 
+Conda Forge
+-----------
+
 .. todo::
 
-   First make sure the **pyodc** package is available through Conda.
+   **pyodc** package is not available through Conda yet.

@@ -19,6 +19,7 @@ The package contains two different implementations of the same library:
 
 * [odc]
 * [pytest]
+* [pandoc]
 * [Jupyter Notebook]
 
 In order for `codc` to work, the `odc` library must be compiled and installed on the system and made available to Python (through the CFFI mechanism) as a shared library.
@@ -59,23 +60,24 @@ python -m pytest
 
 ### Build Documentation
 
-To build the documentation locally, please set up the environment first:
+To build the documentation locally, please install the Python dependencies first:
 
 ```sh
 cd docs
 pip install -r requirements.txt
-pip install ..
 make html
 ```
 
-The built HTML documentation will be available under the `docs/build/html/index.html` path.
+The built HTML documentation will be available under the `docs/_build/html/index.html` path.
 
 ## License
 
-`pyodc` is distributed under the Apache license 2.0 - see the accompanying [LICENSE] file for more details.
+This software is licensed under the terms of the Apache Licence Version 2.0 which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+
+In applying this licence, ECMWF does not waive the privileges and immunities granted to it by virtue of its status as an intergovernmental organisation nor does it submit to any jurisdiction.
 
 [CHANGELOG]: ./CHANGELOG.md
-[LICENSE]: ./LICENSE
 [odc]: https://github.com/ecmwf/odc
 [pytest]: https://pytest.org
+[pandoc]: https://pandoc.org/
 [Jupyter Notebook]: https://jupyter.org

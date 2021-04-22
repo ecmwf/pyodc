@@ -1,10 +1,10 @@
 Development
 ===========
 
+.. index:: Github
+
 Contributions
 -------------
-
-.. index:: Github
 
 The code repository is hosted on `Github`_, feel free to fork it and submit your PRs against the **develop** branch. To clone the repository locally, you can use the following command:
 
@@ -32,10 +32,16 @@ Shared Libraries
 * `odc`_ (>= 1.3.0)
 
 
-Run Unit Tests
---------------
+Converters
+^^^^^^^^^^
+
+* `pandoc`_ (>= 2.13)
+
 
 .. index:: Unit Tests
+
+Run Unit Tests
+--------------
 
 To run the test suite, you can use the following command:
 
@@ -46,12 +52,6 @@ To run the test suite, you can use the following command:
 
 Build Documentation
 -------------------
-
-.. index:: Dependencies; Documentation
-
-.. warning::
-
-   Additional system dependency `pandoc`_ is also required for building of the documentation. It is used for conversion of Jupyter Notebooks into reStructured Text.
 
 To build the documentation locally, please install the Python dependencies first:
 
