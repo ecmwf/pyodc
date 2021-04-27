@@ -49,6 +49,8 @@ class PatchedLib:
         ]
         for env_var in ("ODC_DIR", "odc_DIR"):
             if os.environ.get(env_var):
+                libnames.insert(0, os.path.join(os.environ[env_var], "lib/libodccore"))
+                libnames.insert(0, os.path.join(os.environ[env_var], "lib64/libodccore"))
                 libnames.insert(0, os.path.join(os.environ[env_var], "lib/libodccore.so"))
                 libnames.insert(0, os.path.join(os.environ[env_var], "lib64/libodccore.so"))
 
