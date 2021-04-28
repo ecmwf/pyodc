@@ -25,7 +25,7 @@ Optional
 
 .. note::
 
-   In order for **codc** to work, the **odc** library must be compiled and installed on the system and made available to Python (through the CFFI mechanism) as a shared library.
+   For **codc** to work, the **odc** library must be compiled and installed on the system and made available to Python (through the CFFI mechanism) as a shared library. There are multiple ways to make the library visible to CFFI: it can be installed as a system library, the installation prefix can be passed in ``odc_DIR`` environment variable, or the library directory can be included in ``LD_LIBRARY_PATH``.
 
 
 .. _`odc`: https://github.com/ecmwf/odc
