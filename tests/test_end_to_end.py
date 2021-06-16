@@ -3,7 +3,7 @@ import pandas
 import pytest
 import numpy.testing
 
-from conftest import odc_modules, codc
+from conftest import odc_modules, codc, ODC_VERSION
 
 
 SAMPLE_DATA = {
@@ -179,11 +179,6 @@ def test_unqualified_names(odyssey):
 def test_encode_decode_properties(odyssey):
     """Check that additional properties are encoded and decoded properly."""
 
-    # TODO: Implement frame properties feature in odc library before enabling
-    #   the tests for codc module.
-    if odyssey == codc:
-        pytest.skip("Not implemented in codc yet")
-
     with NamedTemporaryFile() as fencode:
 
         # Test both by passing file handle and name to the encoding function.
@@ -194,6 +189,10 @@ def test_encode_decode_properties(odyssey):
             reader = odyssey.Reader(fencode.name)
 
             for frame in reader.frames:
-                assert frame.properties == SAMPLE_PROPERTIES
+                expected_properties = SAMPLE_PROPERTIES
 
-        fencode.flush()
+                # C library adds an implicit `encoder` property to each frame
+                if odyssey == codc:
+                    expected_properties["encoder"] = "odc version " + ODC_VERSION
+
+                assert frame.properties == expected_properties

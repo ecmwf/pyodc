@@ -145,6 +145,23 @@ class Frame:
         lib.odc_frame_column_count(self.__frame, count)
         return int(count[0])
 
+    @property
+    @memoize_constant
+    def properties(self):
+        count = ffi.new("int*")
+        lib.odc_frame_properties_count(self.__frame, count)
+
+        properties = {}
+        for idx in range(int(count[0])):
+            key_temp = ffi.new("const char**")
+            value_temp = ffi.new("const char**")
+            lib.odc_frame_property_idx(self.__frame, idx, key_temp, value_temp)
+            key = ffi.string(key_temp[0]).decode("utf-8")
+            value = ffi.string(value_temp[0]).decode("utf-8")
+            properties[key] = value
+
+        return properties
+
     def dataframe(self, columns=None):
 
         # Some constants that are useful
