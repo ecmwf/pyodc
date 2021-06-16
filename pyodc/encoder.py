@@ -69,7 +69,7 @@ def encode_single_dataframe(
         column_order(list): A list of column names specifying the encode order. If ``None``, optimise according
                             to the rate of value changes in the columns
         bigendian(bool): Encode in big-endian byte order if ``True``
-        properties(bool): Encode a dictionary of supplied properties
+        properties(dict): Encode a dictionary of supplied properties
 
     Returns:
         list: The column order used for encoding as a list of column names
