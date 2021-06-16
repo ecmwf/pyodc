@@ -52,7 +52,6 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
-    "sphinx.ext.viewcode",
     "sphinx_rtd_theme",
     "nbsphinx",
     "IPython.sphinxext.ipython_directive",
@@ -127,7 +126,7 @@ html_show_sphinx = False
 # html_logo = '_static/logo.png'
 
 
-# -- Options for the autodoc  extension ------------------------------------------
+# -- Options for the autodoc  extension --------------------------------------
 
 autodoc_member_order = "bysource"
 
