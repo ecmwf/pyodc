@@ -17,7 +17,7 @@ from pkg_resources import parse_version
 import cffi
 import os
 
-__odc_version__ = "1.0.2"
+__odc_version__ = "1.4.0"
 
 ffi = cffi.FFI()
 

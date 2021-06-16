@@ -18,7 +18,7 @@ def encode_odb(df: pandas.DataFrame, f, types: dict = None, rows_per_frame=10000
     """
     if isinstance(f, str):
         with open(f, "wb") as freal:
-            return encode_odb(df, freal, types=types, rows_per_frame=rows_per_frame, **kwargs)
+            return encode_odb(df, freal, types=types, rows_per_frame=rows_per_frame, properties=properties, **kwargs)
 
     # Some constants that are useful
 
