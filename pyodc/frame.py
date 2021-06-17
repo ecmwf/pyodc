@@ -214,7 +214,7 @@ class Frame:
                     for nm, sz, off in zip(
                         codec.bitfield_names,
                         codec.bitfield_sizes,
-                        accumulate(chain([0]), codec.bitfield_sizes),
+                        accumulate(chain([0], codec.bitfield_sizes)),
                     )
                 ],
             )
