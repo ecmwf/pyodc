@@ -1,7 +1,8 @@
-from .frame import Frame, MismatchedFramesError
+import io
 
 import pandas
-import io
+
+from .frame import Frame, MismatchedFramesError
 
 
 class Reader:

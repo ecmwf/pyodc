@@ -14,9 +14,9 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+import datetime
 import os
 import sys
-import datetime
 
 top = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, top)

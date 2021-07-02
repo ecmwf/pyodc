@@ -10,17 +10,17 @@
 
 from __future__ import absolute_import
 
-from .stream import BigEndianStream, LittleEndianStream
+from .codec import read_codec
 from .constants import (
-    TYPE_NAMES,
     BITFIELD,
-    MAGIC,
     ENDIAN_MARKER,
     FORMAT_VERSION_NUMBER_MAJOR,
     FORMAT_VERSION_NUMBER_MINOR,
+    MAGIC,
     NEW_HEADER,
+    TYPE_NAMES,
 )
-from .codec import read_codec
+from .stream import BigEndianStream, LittleEndianStream
 
 try:
     from collections.abc import Iterable
@@ -28,6 +28,7 @@ except ImportError:
     from collections import Iterable
 
 from itertools import accumulate, chain
+
 import pandas as pd
 
 

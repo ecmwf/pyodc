@@ -13,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pkg_resources import parse_version
-import cffi
 import os
+
+import cffi
+from pkg_resources import parse_version
 
 __odc_version__ = "1.4.0"
 

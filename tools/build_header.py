@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 import sys
-from pycparser import parse_file, c_generator
+
+from pycparser import c_generator, parse_file
 
 
 def usage():

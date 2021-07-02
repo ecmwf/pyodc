@@ -1,12 +1,12 @@
-import pytest
+import os
+import struct
 
+import pytest
+from conftest import odc_modules
+
+from pyodc import codec
 from pyodc.constants import DataType
 from pyodc.stream import LittleEndianStream
-from pyodc import codec
-import struct
-import os
-
-from conftest import odc_modules
 
 
 def _check_decode(cdc, encoded, check):

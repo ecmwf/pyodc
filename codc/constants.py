@@ -1,5 +1,6 @@
-from .lib import lib
 from enum import IntEnum, unique
+
+from .lib import lib
 
 
 @unique

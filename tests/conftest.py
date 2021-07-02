@@ -1,7 +1,8 @@
-import pytest
 import os
-import pyodc
 
+import pytest
+
+import pyodc
 
 odc_modules = [pyodc]
 

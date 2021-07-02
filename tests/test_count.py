@@ -1,8 +1,7 @@
-from conftest import odc_modules
-
-import pytest
 import os
 
+import pytest
+from conftest import odc_modules
 
 data_file1 = os.path.join(os.path.dirname(__file__), "data/data1.odb")
 
