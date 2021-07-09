@@ -19,7 +19,7 @@ The package contains two different implementations of the same library:
 .. index:: Contents
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents
 
    content/introduction

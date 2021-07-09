@@ -4,7 +4,7 @@ Usage
 =====
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    usage/decoding-odb-2-data
    usage/encoding-odb-2-data
