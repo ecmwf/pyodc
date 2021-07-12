@@ -13,7 +13,7 @@ The package contains two different implementations of the same library:
 
 ### Required
 
-* Python 3/3.5/3.6/3.7
+* Python 3.x
 
 ### Optional
 

@@ -29,7 +29,7 @@ Python Packages
 Shared Libraries
 ^^^^^^^^^^^^^^^^
 
-* `odc`_ (>= 1.3.0)
+* `odc`_ (>= 1.4.0)
 
 
 Converters

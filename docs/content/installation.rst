@@ -12,7 +12,7 @@ Dependencies
 Required
 ^^^^^^^^
 
-* Python (3/3.5/3.6/3.7)
+* Python 3.x
 
 
 .. index:: Dependencies; Optional
@@ -20,7 +20,7 @@ Required
 Optional
 ^^^^^^^^
 
-* `odc`_ (>= 1.3.0)
+* `odc`_ (>= 1.4.0)
 * `Jupyter Notebook`_
 
 .. note::
