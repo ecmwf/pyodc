@@ -1,11 +1,12 @@
-from .constants import NEW_HEADER, MAGIC, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR, ENDIAN_MARKER
-from .codec import select_codec
-from .stream import LittleEndianStream, BigEndianStream
-
 import hashlib
-import pandas as pd
-import numpy as np
 import io
+
+import numpy as np
+import pandas as pd
+
+from .codec import select_codec
+from .constants import ENDIAN_MARKER, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR, MAGIC, NEW_HEADER
+from .stream import BigEndianStream, LittleEndianStream
 
 
 def encode_odb(

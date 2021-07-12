@@ -1,7 +1,8 @@
-from .constants import MISSING_INTEGER, DataType, MISSING_REAL, INTERNAL_REAL_MISSING, MISSING_STRING
-
 import struct
+
 import pandas as pd
+
+from .constants import INTERNAL_REAL_MISSING, MISSING_INTEGER, MISSING_REAL, MISSING_STRING, DataType
 
 
 class Codec:

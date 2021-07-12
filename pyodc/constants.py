@@ -1,5 +1,5 @@
-from enum import IntEnum, unique
 import struct
+from enum import IntEnum, unique
 
 # Current version information
 

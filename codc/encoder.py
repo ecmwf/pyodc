@@ -1,6 +1,7 @@
-from .constants import INTEGER, STRING, DOUBLE
-from .lib import lib, ffi
 import pandas
+
+from .constants import DOUBLE, INTEGER, STRING
+from .lib import ffi, lib
 
 
 def encode_odb(df: pandas.DataFrame, f, types: dict = None, rows_per_frame=10000, properties=None, **kwargs):

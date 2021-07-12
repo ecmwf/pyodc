@@ -1,8 +1,9 @@
-from .lib import lib, ffi
-from .frame import Frame
+import io
 
 import pandas
-import io
+
+from .frame import Frame
+from .lib import ffi, lib
 
 
 class Reader:

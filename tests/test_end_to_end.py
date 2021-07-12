@@ -1,10 +1,9 @@
 from tempfile import NamedTemporaryFile
+
+import numpy.testing
 import pandas
 import pytest
-import numpy.testing
-
-from conftest import odc_modules, codc, ODC_VERSION
-
+from conftest import ODC_VERSION, codc, odc_modules
 
 SAMPLE_DATA = {
     "col1": [1, 2, 3, 4, 5, 6, 7],

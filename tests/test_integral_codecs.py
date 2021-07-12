@@ -1,10 +1,11 @@
+import io
+
+import pandas as pd
 import pytest
 
+from pyodc import codec
 from pyodc.codec import select_codec
 from pyodc.stream import LittleEndianStream
-from pyodc import codec
-import pandas as pd
-import io
 
 
 def _check_encode(codec, series, encode_compare):

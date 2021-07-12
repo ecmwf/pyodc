@@ -1,14 +1,16 @@
-from .constants import INTEGER, REAL, STRING, BITFIELD, DOUBLE, DataType
+from .constants import BITFIELD, DOUBLE, INTEGER, REAL, STRING, DataType
 from .lib import ffi, lib, memoize_constant
 
 try:
     from collections.abc import Iterable
 except ImportError:
     from collections import Iterable
+
 import codecs
+import os
+
 import numpy
 import pandas
-import os
 
 
 # A null-terminated UTF-8 decoder
