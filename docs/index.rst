@@ -1,10 +1,7 @@
 Welcome to pyodc’s documentation!
 =================================
 
-.. warning::
-   This documentation is a work in progress. It is not yet considered ready.
-
-**pyodc** is a Python interface to `odc`_ for encoding/decoding ODB-2 files.
+**pyodc** is a Python interface to :doc:`odc <odc:index>` for encoding/decoding ODB-2 files.
 
 The package contains two different implementations of the same library:
 
@@ -19,7 +16,7 @@ The package contains two different implementations of the same library:
 .. index:: Contents
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents
 
    content/introduction
@@ -29,6 +26,3 @@ The package contains two different implementations of the same library:
    content/development
    content/licence
    genindex
-
-
-.. _`odc`: https://github.com/ecmwf/odc

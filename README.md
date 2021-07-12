@@ -1,5 +1,10 @@
 # pyodc
 
+[![PyPI](https://img.shields.io/pypi/v/pyodc)](https://pypi.org/project/pyodc/)
+[![Documentation Status](https://readthedocs.org/projects/pyodc/badge/?version=latest)](https://pyodc.readthedocs.io/en/latest/?badge=latest)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Licence](https://img.shields.io/github/license/ecmwf/pyodc)](https://github.com/ecmwf/pyodc/blob/master/LICENSE)
+
 A Python interface to `odc` for encoding/decoding ODB\-2 files.
 
 The package contains two different implementations of the same library:
@@ -13,7 +18,7 @@ The package contains two different implementations of the same library:
 
 ### Required
 
-* Python 3/3.5/3.6/3.7
+* Python 3.x
 
 ### Optional
 

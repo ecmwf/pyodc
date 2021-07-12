@@ -50,6 +50,7 @@ release = pyodc.__version__
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
     "sphinx_rtd_theme",
@@ -140,3 +141,11 @@ autodoc_member_order = "bysource"
 #   Unfortunately, this cannot be done via the configuration file for the Read the Docs service, you must use their web
 #   interface instead. More information here: https://github.com/readthedocs/readthedocs.org/issues/6311
 todo_include_todos = False if os.environ.get("NO_INCLUDE_TODOS") else True
+
+
+# -- Options for the intersphinx extension ------------------------------------------
+
+# Target the latest version when interlinking the projects
+intersphinx_mapping = {
+    "odc": ("https://odc.readthedocs.io/en/latest/", None),
+}

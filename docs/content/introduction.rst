@@ -25,3 +25,7 @@ An ODB-2 data stream is comprised of a sequence of frames. Each frame encodes a 
 
 
 It is important to understand that the ODB-2 should not be considered as a file format, but a data stream instead. In a stream of messages frames can also be unrelated, having entirely different data, so they must be decoded separately. However, if in a stream of messages the frames contain the the same data types, they are suitable for combined decoding and processing.
+
+.. seealso::
+
+   For full ODB-2 format reference, please see :doc:`odc:content/reference/file-format-reference` chapter in **odc** documentation.
