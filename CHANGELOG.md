@@ -1,6 +1,18 @@
 
 # Changelog for pyodc
 
+## 1.x.x
+
+* Fixed [ODB-530]: Bitfield column inspection returns incomplete data in pure-Python implementation
+* Bumped up required `odc` version number to 1.4.0
+* Added missing frame properties accessor to `codc` interface
+* Fixed [ODB-525]: Setting odc prefix variable (`odc_DIR`) does not work as expected on macOS
+* Fixed [ODB-524]: Keys and values in decoded frame properties are switched on older Python version
+* Added test flag to skip `codc` tests on demand (`PYODC_SKIP_CODC`)
+* Fixed [ODB-523]: Additional properties parameter is omitted in encode_odb() when string is passed as file
+* Fixed package setup metadata
+* Added documentation
+
 ## 1.0.4
 
 * Correct support for constant codecs
@@ -27,3 +39,9 @@
 ## 1.0.0
 
 * Initial version
+
+
+[ODB-530]: https://jira.ecmwf.int/browse/ODB-530
+[ODB-525]: https://jira.ecmwf.int/browse/ODB-525
+[ODB-524]: https://jira.ecmwf.int/browse/ODB-524
+[ODB-523]: https://jira.ecmwf.int/browse/ODB-523
