@@ -1,9 +1,10 @@
 # pyodc
 
 [![PyPI](https://img.shields.io/pypi/v/pyodc)](https://pypi.org/project/pyodc/)
+[![Build Status](https://img.shields.io/github/workflow/status/ecmwf/pyodc/Continuous%20Integration/develop)](https://github.com/ecmwf/pyodc/actions/workflows/ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/pyodc/badge/?version=latest)](https://pyodc.readthedocs.io/en/latest/?badge=latest)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Licence](https://img.shields.io/github/license/ecmwf/pyodc)](https://github.com/ecmwf/pyodc/blob/master/LICENSE)
+[![Licence](https://img.shields.io/github/license/ecmwf/pyodc)](https://github.com/ecmwf/pyodc/blob/develop/LICENSE)
 
 A Python interface to `odc` for encoding/decoding ODB\-2 files.
 
@@ -12,7 +13,7 @@ The package contains two different implementations of the same library:
 * `pyodc` is a pure-python encoder and decoder for ODB\-2 data, which encodes data from, and decodes it into pandas data frames
 * `codc` is an implementation of the same API as `pyodc` that depends on the ECMWF `odc` library, and comes with _much_ better performance
 
-[CHANGELOG]
+[Documentation] [Changelog]
 
 ## Dependencies
 
@@ -81,7 +82,8 @@ This software is licensed under the terms of the Apache Licence Version 2.0 whic
 
 In applying this licence, ECMWF does not waive the privileges and immunities granted to it by virtue of its status as an intergovernmental organisation nor does it submit to any jurisdiction.
 
-[CHANGELOG]: ./CHANGELOG.md
+[Documentation]: https://pyodc.readthedocs.io/en/latest/
+[Changelog]: ./CHANGELOG.md
 [odc]: https://github.com/ecmwf/odc
 [pytest]: https://pytest.org
 [pandoc]: https://pandoc.org/
