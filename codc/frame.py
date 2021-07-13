@@ -15,12 +15,12 @@ import pandas
 
 # A null-terminated UTF-8 decoder
 def null_utf_decoder(name):
-    if name == "utf-8-null":
+    if name == "utf_8_null":
 
         utf8_decoder = codecs.getdecoder("utf-8")
 
         return codecs.CodecInfo(
-            name="utf-8-null",
+            name="utf_8_null",
             encode=None,
             decode=lambda b, e: utf8_decoder(b.split(b"\x00", 1)[0], e),
             incrementalencoder=None,
@@ -261,7 +261,7 @@ class Frame:
                 # Also note, result_type added to work around bug in pandas
                 # https://github.com/pandas-dev/pandas/issues/34529
                 dataframes[i] = df.apply(
-                    lambda x: x.astype("object").str.decode("utf-8-null"),
+                    lambda x: x.astype("object").str.decode("utf_8_null"),
                     result_type="expand",
                 )
 
