@@ -32,10 +32,10 @@ class Codec:
             DataType.STRING: MISSING_STRING,
         }[data_type]
         self.typed_missing_value = {
-            DataType.INTEGER: int(MISSING_INTEGER),
-            DataType.BITFIELD: int(MISSING_INTEGER),
-            DataType.DOUBLE: float(MISSING_REAL),
-            DataType.REAL: float(MISSING_REAL),
+            DataType.INTEGER: None,
+            DataType.BITFIELD: None,
+            DataType.DOUBLE: None,
+            DataType.REAL: None,
             DataType.STRING: ''
         }[data_type]
 
