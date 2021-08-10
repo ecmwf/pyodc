@@ -1,7 +1,10 @@
 import subprocess
 import sys
+import os
 
 
 def test_setup():
     """Performs some tests on the meta-data of a package"""
-    subprocess.check_call([sys.executable, "setup.py", "check"])
+    repodir = os.path.dirname(os.path.dirname(__file__))
+    setup_py = os.path.join(repodir, 'setup.py')
+    subprocess.check_call([sys.executable, setup_py, "check"])
