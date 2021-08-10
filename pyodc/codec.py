@@ -31,6 +31,13 @@ class Codec:
             DataType.REAL: MISSING_REAL,
             DataType.STRING: MISSING_STRING,
         }[data_type]
+        self.typed_missing_value = {
+            DataType.INTEGER: int(MISSING_INTEGER),
+            DataType.BITFIELD: int(MISSING_INTEGER),
+            DataType.DOUBLE: float(MISSING_REAL),
+            DataType.REAL: float(MISSING_REAL),
+            DataType.STRING: ''
+        }[data_type]
 
         assert self.name is not None
 

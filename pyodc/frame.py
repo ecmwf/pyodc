@@ -275,13 +275,17 @@ class Frame:
 
         lastDecoded = [0] * self._numberOfColumns
 
-        lastStartCol = 0
+        lastStartCol = None
         for row in range(self._numberOfRows):
 
             startCol = self._stream.readMarker()
 
-            # Fill in missing data in columns
-            if lastStartCol > startCol:
+            if lastStartCol is None:
+                if startCol > 0:
+                    for col in range(startCol):
+                        output_cols[col].append(column_codecs[col].typed_missing_value)
+
+            elif lastStartCol > startCol:
                 for col in range(startCol, lastStartCol):
                     last = output_cols[col][-1]
                     output_cols[col].extend(last for _ in range(row - lastDecoded[col] - 1))
@@ -292,9 +296,10 @@ class Frame:
                 output_cols[col].append(column_codecs[col].decode(self._stream))
                 lastDecoded[col] = row
 
-        for col in range(lastStartCol):
-            last = output_cols[col][-1]
-            output_cols[col].extend(last for _ in range(self._numberOfRows - lastDecoded[col] - 1))
+        if lastStartCol is not None:
+            for col in range(lastStartCol):
+                last = output_cols[col][-1]
+                output_cols[col].extend(last for _ in range(self._numberOfRows - lastDecoded[col] - 1))
 
         df = pd.DataFrame(output)
 
