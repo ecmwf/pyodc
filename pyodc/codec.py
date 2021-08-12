@@ -36,7 +36,7 @@ class Codec:
             DataType.BITFIELD: None,
             DataType.DOUBLE: None,
             DataType.REAL: None,
-            DataType.STRING: ''
+            DataType.STRING: "",
         }[data_type]
 
         assert self.name is not None
