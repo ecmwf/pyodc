@@ -12,12 +12,12 @@
 
 # See ODB-533
 
-from conftest import odc_modules
-
-import pandas
-import numpy
-import pytest
 import os
+
+import numpy
+import pandas
+import pytest
+from conftest import odc_modules
 
 
 @pytest.mark.parametrize("odyssey", odc_modules)
