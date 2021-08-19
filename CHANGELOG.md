@@ -1,8 +1,9 @@
 
 # Changelog for pyodc
 
-## 1.x.x
+## 1.1.0
 
+* Fixed [ODB-533]: Decode data starting with missing values correctly
 * Fixed [ODB-530]: Bitfield column inspection returns incomplete data in pure-Python implementation
 * Bumped up required `odc` version number to 1.4.0
 * Added missing frame properties accessor to `codc` interface
