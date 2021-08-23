@@ -1,49 +1,81 @@
-from .constants import (NEW_HEADER, MAGIC, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR,
-                        ENDIAN_MARKER)
-from .codec import select_codec
-from .stream import LittleEndianStream, BigEndianStream
-
 import hashlib
-import pandas as pd
-import numpy as np
 import io
 
+import numpy as np
+import pandas as pd
 
-def encode_odb(dataframe: pd.DataFrame, f, rows_per_frame=10000, types=None, bigendian: bool=False,
-               properties: dict=None):
+from .codec import select_codec
+from .constants import ENDIAN_MARKER, FORMAT_VERSION_NUMBER_MAJOR, FORMAT_VERSION_NUMBER_MINOR, MAGIC, NEW_HEADER
+from .stream import BigEndianStream, LittleEndianStream
+
+
+def encode_odb(
+    dataframe: pd.DataFrame,
+    target,
+    rows_per_frame=10000,
+    types=None,
+    bigendian: bool = False,
+    properties: dict = None,
+):
     """
-    :param dataframe: A pandas dataframe to encode
-    :param f: A file-like object to write the encoded data to
-    :param columns: A dict of (optional) column-name : constant DataType pairs, or None
-    :param bigendian: Encode in big- endian byte order if True
-    :param properties: Encode a dictionary of supplied properties
+    Encode a pandas dataframe into an ODB-2 stream
+
+    Parameters:
+        dataframe(DataFrame): A pandas dataframe to encode
+        target(str|file): A file-like object to write the encoded data to
+        columns(dict): A dictionary of (optional) column-name : constant :class:`.DataType` pairs, or ``None``
+        bigendian(bool): Encode in big-endian byte order if ``True``
+        properties(dict): Encode a dictionary of supplied properties
     """
-    if isinstance(f, str):
-        with open(f, 'wb') as freal:
-            return encode_odb(dataframe, freal, rows_per_frame=rows_per_frame, types=types, bigendian=bigendian)
+    if isinstance(target, str):
+        with open(target, "wb") as real_target:
+            return encode_odb(
+                dataframe,
+                real_target,
+                rows_per_frame=rows_per_frame,
+                types=types,
+                bigendian=bigendian,
+                properties=properties,
+            )
 
     column_order = None
 
     # Split the dataframe into chunks of appropriate size
     for i, sub_df in dataframe.groupby(np.arange(len(dataframe)) // rows_per_frame):
-        column_order = encode_single_dataframe(sub_df, f,
-                                               types=types,
-                                               column_order=column_order,
-                                               bigendian=bigendian,
-                                               properties=(properties or {}))
+        column_order = encode_single_dataframe(
+            sub_df,
+            target,
+            types=types,
+            column_order=column_order,
+            bigendian=bigendian,
+            properties=(properties or {}),
+        )
 
 
-def encode_single_dataframe(dataframe: pd.DataFrame, f, types: dict=None, column_order: list=None,
-                            bigendian: bool=False, properties: dict=None):
+def encode_single_dataframe(
+    dataframe: pd.DataFrame,
+    target,
+    types: dict = None,
+    column_order: list = None,
+    bigendian: bool = False,
+    properties: dict = None,
+):
     """
-    :param dataframe: A pandas dataframe to encode
-    :param f: A file-like object to write the encoded data to
-    :param columns: A dict of (optional) column-name : constant DataType pairs, or None
-    :param column_order: A list of column names specifying the encode order. If None, optimise according
-                         to the rate of value changes in the columns
-    :param bigendian: Encode in big- endian byte order if True
-    :param properties: Encode a dictionary of supplied properties
-    :return: The column order used for encoding as a list of column names
+    Encode a single dataframe into an ODB-2 stream
+
+    Parameters:
+        dataframe(DataFrame): A pandas dataframe to encode
+        target(str|file): A file-like object to write the encoded data to
+        columns(dict): A dictionary of (optional) column-name : constant :class:`.DataType` pairs, or ``None``
+        column_order(list): A list of column names specifying the encode order. If ``None``, optimise according
+                            to the rate of value changes in the columns
+        bigendian(bool): Encode in big-endian byte order if ``True``
+        properties(dict): Encode a dictionary of supplied properties
+
+    Returns:
+        list: The column order used for encoding as a list of column names
+
+    :meta private:
     """
 
     stream_class = BigEndianStream if bigendian else LittleEndianStream
@@ -67,9 +99,9 @@ def encode_single_dataframe(dataframe: pd.DataFrame, f, types: dict=None, column
     headerPart2 = _encodeHeaderPart2(dataframe, codecs, stream_class, len(data), (properties or {}))
     headerPart1 = _encodeHeaderPart1(headerPart2, stream_class)
 
-    f.write(headerPart1)
-    f.write(headerPart2)
-    f.write(data)
+    target.write(headerPart1)
+    target.write(headerPart2)
+    target.write(data)
 
     return column_order
 
@@ -95,7 +127,9 @@ def _encodeData(dataframe, codecs, stream_class):
     for row in dataframe.itertuples(index=False):
 
         for i, (codec, index) in enumerate(codec_indexes):
-            if last_row is None or (row[index] != last_row[index] and not (pd.isnull(row[index]) and pd.isnull(last_row[index]))):
+            if last_row is None or (
+                row[index] != last_row[index] and not (pd.isnull(row[index]) and pd.isnull(last_row[index]))
+            ):
                 break
 
         stream.encodeMarker(i)
@@ -171,6 +205,3 @@ def _encodeHeaderPart1(headerPart2, stream_class):
     stream.encodeInt32(len(headerPart2))
 
     return headerIO.getbuffer()
-
-
-

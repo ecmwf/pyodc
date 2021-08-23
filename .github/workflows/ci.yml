@@ -1,0 +1,238 @@
+name: ci
+
+# Controls when the action will run
+on:
+
+  # Trigger the workflow on all pushes
+  push:
+    branches:
+    - '**'
+    tags:
+    - '**'
+
+  # Trigger the workflow on all pull requests
+  pull_request: ~
+
+  # Allow workflow to be dispatched on demand
+  workflow_dispatch: ~
+
+jobs:
+  qa:
+    name: qa
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install black flake8 isort
+
+    - name: Check isort
+      run: isort --check .
+
+    - name: Check black
+      run: black --check .
+
+    - name: Check flake8
+      run: flake8 .
+
+  ci:
+    name: ci
+    needs: qa
+    strategy:
+      matrix:
+        name:
+        - gnu-10@ubuntu-20.04
+        - clang-12@ubuntu-20.04
+        - gnu-10@ubuntu-18.04
+        - clang-9@ubuntu-18.04
+        - gnu-10@macos-10.15
+        - clang-12@macos-10.15
+        include:
+        - name: gnu-10@ubuntu-20.04
+          os: ubuntu-20.04
+          compiler: gnu-10
+          compiler_cc: gcc-10
+          compiler_cxx: g++-10
+          compiler_fc: gfortran-10
+        - name: clang-12@ubuntu-20.04
+          os: ubuntu-20.04
+          compiler: clang-12
+          compiler_cc: clang-12
+          compiler_cxx: clang++-12
+          compiler_fc: gfortran-10
+        - name: gnu-10@ubuntu-18.04
+          os: ubuntu-18.04
+          compiler: gnu-10
+          compiler_cc: gcc-10
+          compiler_cxx: g++-10
+          compiler_fc: gfortran-10
+        - name: clang-9@ubuntu-18.04
+          os: ubuntu-18.04
+          compiler: clang-9
+          compiler_cc: clang-9
+          compiler_cxx: clang++-9
+          compiler_fc: gfortran-9
+        - name: gnu-10@macos-10.15
+          os: macos-10.15
+          compiler: gnu-10
+          compiler_cc: gcc-10
+          compiler_cxx: g++-10
+          compiler_fc: gfortran-10
+        # Xcode compiler requires empty environment variables, so we pass null (~) here
+        - name: clang-12@macos-10.15
+          os: macos-10.15
+          compiler: clang-12
+          compiler_cc: ~
+          compiler_cxx: ~
+          compiler_fc: gfortran-10
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      id: install-dependencies
+      uses: ecmwf-actions/build-package@v1
+      with:
+        self_build: false
+        dependencies: |
+          ecmwf/ecbuild
+          ecmwf/eckit
+          ecmwf/odc
+        dependency_branch: develop
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pytest pytest-cov
+        test -f requirements.txt && python -m pip install -r requirements.txt || echo "Requirements file not found"
+
+    - name: Run Tests
+      env:
+        LD_LIBRARY_PATH: ${{ steps.install-dependencies.outputs.lib_path }}
+      shell: bash -eux {0}
+      run: |
+        DYLD_LIBRARY_PATH=${{ env.LD_LIBRARY_PATH }} python -m pytest --cov=./ --cov-report=xml
+        python -m coverage report
+
+    - name: Codecov Upload
+      if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+      uses: codecov/codecov-action@v2
+
+  deploy:
+    name: deploy
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    needs: ci
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+
+    - name: Setup Python Environment
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install setuptools wheel twine
+
+    # Checks if the release version matches version declared in the package.
+    #   If they differ, the job will gracefully fail and subsequent step will be skipped.
+    - name: Check Version
+      id: check-version
+      shell: bash -eux {0}
+      continue-on-error: true
+      run: |
+        release=${GITHUB_REF##*/}
+        version=$(python setup.py --version)
+        test "$release" == "$version"
+
+    - name: Build and Publish
+      if: steps.check-version.outcome == 'success'
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      shell: bash -eux {0}
+      run: |
+        python setup.py sdist
+        twine upload dist/*
+
+  notify:
+    name: notify
+    runs-on: ubuntu-20.04
+    needs:
+    - ci
+    - qa
+    - deploy
+    if: always() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
+    steps:
+    - name: Check Workflow Runs
+      id: check-workflow-runs
+      shell: bash -eux {0}
+      continue-on-error: true
+      run: |
+        # Check results of previous jobs in the same run.
+        #   This context has no access to special job status functions.
+        if [[ "${{ needs.ci.result }}" == "failure" || "${{ needs.qa.result }}" == "failure" || "${{ needs.deploy.result }}" == "failure" ]]
+        then
+          WORKFLOW_STATUS="failure"
+          MESSAGE_TITLE="failed"
+          MESSAGE_TEXT="Some jobs were not successful"
+          MESSAGE_COLOUR="#cb2431"
+        elif [[ "${{ needs.ci.result }}" == "cancelled" || "${{ needs.qa.result }}" == "cancelled" || "${{ needs.deploy.result }}" == "cancelled" ]]
+        then
+          WORKFLOW_STATUS="cancelled"
+          MESSAGE_TITLE="cancelled"
+          MESSAGE_TEXT="Some jobs were not successful"
+          MESSAGE_COLOUR="#959da5"
+        else
+          WORKFLOW_STATUS="success"
+          MESSAGE_TITLE="succeeded"
+          MESSAGE_TEXT="All jobs were successful"
+          MESSAGE_COLOUR="#28a745"
+        fi
+        echo ::set-output name=workflow-status::$WORKFLOW_STATUS
+        echo ::set-output name=message-title::$MESSAGE_TITLE
+        echo ::set-output name=message-text::$MESSAGE_TEXT
+        echo ::set-output name=message-colour::$MESSAGE_COLOUR
+
+        # Fetch previous workflow run conclusion via REST API for the same branch
+        BRANCH_NAME=${GITHUB_REF##refs/heads/}
+        PREVIOUS_CONCLUSION=$( curl https://api.github.com/repos/${{ github.repository }}/actions/workflows/ci.yml/runs\?branch\=$BRANCH_NAME\&status\=completed\&per_page\=1 | jq .workflow_runs\[0\].conclusion | tr -d '"' )
+        echo ::set-output name=previous-conclusion::$PREVIOUS_CONCLUSION
+
+    # Sends a status message to the configured MS Teams channel.
+    #   It will get triggered in case:
+    #   - current workflow run has failed
+    #   - this is the first successful run after a failure
+    #   - this is the first successful run after a cancellation
+    - name: Send a Message to Microsoft Teams
+      uses: aliencube/microsoft-teams-actions@v0.8.0
+      if: steps.check-workflow-runs.outputs.workflow-status == 'failure' || contains(steps.check-workflow-runs.outputs.previous-conclusion, 'failure') || steps.check-workflow-runs.outputs.previous-conclusion == 'cancelled'
+      env:
+        MESSAGE_TITLE: ${{ steps.check-workflow-runs.outputs.message-title }}
+        MESSAGE_TEXT: ${{ steps.check-workflow-runs.outputs.message-text }}
+        MESSAGE_COLOUR: ${{ steps.check-workflow-runs.outputs.message-colour }}
+      with:
+        webhook_uri: ${{ secrets.MS_TEAMS_INCOMING_WEBHOOK }}
+        title: '[${{ github.repository }}] Run ${{ env.MESSAGE_TITLE }}: ${{ github.workflow }} - ${{ github.ref }} (${{ github.sha }})'
+        summary: '${{ github.workflow }}: ${{ env.MESSAGE_TEXT }}'
+        text: '${{ github.workflow }}: ${{ env.MESSAGE_TEXT }}'
+        theme_color: '${{ env.MESSAGE_COLOUR }}'
+        sections: '[{"facts":[{"name":"Code QA","value":"${{ needs.qa.result }}"},{"name":"Build & Test","value":"${{ needs.ci.result }}"},{"name":"Deploy","value":"${{ needs.deploy.result }}"}]}]'
+        actions: '[{"@type":"OpenUri","name":"View workflow run","targets":[{"os":"default","uri":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}]}]'

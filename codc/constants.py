@@ -1,6 +1,6 @@
+from enum import IntEnum, unique
 
 from .lib import lib
-from enum import IntEnum, unique
 
 
 @unique
@@ -19,4 +19,3 @@ REAL = DataType.REAL
 STRING = DataType.STRING
 BITFIELD = DataType.BITFIELD
 DOUBLE = DataType.DOUBLE
-

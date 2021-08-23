@@ -1,9 +1,10 @@
-
-from .constants import *
-from .lib import lib, ffi
 import pandas
 
-def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, properties=None, **kwargs):
+from .constants import DOUBLE, INTEGER, STRING
+from .lib import ffi, lib
+
+
+def encode_odb(df: pandas.DataFrame, f, types: dict = None, rows_per_frame=10000, properties=None, **kwargs):
     """
     Encode a pandas dataframe into ODB2 format
 
@@ -17,13 +18,13 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
     :return:
     """
     if isinstance(f, str):
-        with open(f, 'wb') as freal:
-            return encode_odb(df, freal, types=types, rows_per_frame=rows_per_frame, **kwargs)
+        with open(f, "wb") as freal:
+            return encode_odb(df, freal, types=types, rows_per_frame=rows_per_frame, properties=properties, **kwargs)
 
     # Some constants that are useful
 
-    pmissing_integer = ffi.new('long*')
-    pmissing_double = ffi.new('double*')
+    pmissing_integer = ffi.new("long*")
+    pmissing_double = ffi.new("double*")
     lib.odc_missing_integer(pmissing_integer)
     lib.odc_missing_double(pmissing_double)
     missing_integer = pmissing_integer[0]
@@ -43,25 +44,25 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
         dtype = override_type
 
         if dtype is None:
-            if arr.dtype in ('uint64', 'int64'):
+            if arr.dtype in ("uint64", "int64"):
                 dtype = INTEGER
-            elif arr.dtype == 'float64':
+            elif arr.dtype == "float64":
                 if not data.isnull().all() and all(pandas.isnull(v) or float(v).is_integer() for v in arr):
                     dtype = INTEGER
-                    return_arr = arr.fillna(value=missing_integer).astype('int64')
+                    return_arr = arr.fillna(value=missing_integer).astype("int64")
                 else:
                     dtype = DOUBLE
                     return_arr = arr.fillna(value=missing_double)
-            elif arr.dtype == 'object':
+            elif arr.dtype == "object":
                 if not arr.isnull().all() and all(s is None or isinstance(s, str) for s in arr):
                     dtype = STRING
                 elif arr.isnull().all():
                     dtype = INTEGER
 
-        if arr.dtype == 'object':
+        if arr.dtype == "object":
             # Map strings into an array that can be read in C
             if dtype == STRING:
-                return_arr = return_arr.astype("|S{}".format(max(8, 8 * (1 + ((max(len(s) for s in arr)- 1) // 8)))))
+                return_arr = return_arr.astype("|S{}".format(max(8, 8 * (1 + ((max(len(s) for s in arr) - 1) // 8)))))
             elif dtype == INTEGER:
                 return_arr = return_arr.fillna(value=missing_integer).astype("int64")
 
@@ -74,12 +75,12 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
     if types is None:
         types = {}
 
-    encoder = ffi.new('odc_encoder_t**')
+    encoder = ffi.new("odc_encoder_t**")
     lib.odc_new_encoder(encoder)
     encoder = ffi.gc(encoder[0], lib.odc_free_encoder)
 
     for k, v in (properties or {}).items():
-        lib.odc_encoder_add_property(encoder, k.encode('utf-8'), v.encode('utf-8'))
+        lib.odc_encoder_add_property(encoder, k.encode("utf-8"), v.encode("utf-8"))
 
     lib.odc_encoder_set_row_count(encoder, nrows)
     lib.odc_encoder_set_rows_per_frame(encoder, rows_per_frame)
@@ -93,9 +94,13 @@ def encode_odb(df: pandas.DataFrame, f, types: dict=None, rows_per_frame=10000, 
         data, dtype = infer_column_type(data, types.get(name, None))
         data_cache.append(data)
 
-        lib.odc_encoder_add_column(encoder, name.encode('utf-8'), dtype)
-        lib.odc_encoder_column_set_data_array(encoder, i, data.dtype.itemsize, data.array.to_numpy().strides[0],
-                                              ffi.cast('void*', data.values.ctypes.data))
+        lib.odc_encoder_add_column(encoder, name.encode("utf-8"), dtype)
+        lib.odc_encoder_column_set_data_array(
+            encoder,
+            i,
+            data.dtype.itemsize,
+            data.array.to_numpy().strides[0],
+            ffi.cast("void*", data.values.ctypes.data),
+        )
 
     lib.odc_encode_to_file_descriptor(encoder, f.fileno(), ffi.NULL)
-

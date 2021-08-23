@@ -13,11 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pkg_resources import parse_version
-import cffi
 import os
 
-__odc_version__ = "1.0.2"
+import cffi
+from pkg_resources import parse_version
+
+__odc_version__ = "1.4.0"
 
 ffi = cffi.FFI()
 
@@ -37,17 +38,22 @@ class PatchedLib:
     Finds the header file associated with the ODC C API and parses it, loads the shared library,
     and patches the accessors with automatic python-C error handling.
     """
+
     __type_names = {}
 
     def __init__(self):
 
         ffi.cdef(self.__read_header())
 
-        libnames = ['odccore', ]
-        for env_var in ('ODC_DIR', 'odc_DIR'):
+        libnames = [
+            "odccore",
+        ]
+        for env_var in ("ODC_DIR", "odc_DIR"):
             if os.environ.get(env_var):
-                libnames.insert(0, os.path.join(os.environ[env_var], 'lib/libodccore.so'))
-                libnames.insert(0, os.path.join(os.environ[env_var], 'lib64/libodccore.so'))
+                libnames.insert(0, os.path.join(os.environ[env_var], "lib/libodccore"))
+                libnames.insert(0, os.path.join(os.environ[env_var], "lib64/libodccore"))
+                libnames.insert(0, os.path.join(os.environ[env_var], "lib/libodccore.so"))
+                libnames.insert(0, os.path.join(os.environ[env_var], "lib64/libodccore.so"))
 
         for libname in libnames:
             try:
@@ -79,26 +85,26 @@ class PatchedLib:
 
         # Check the library version
 
-        tmp_str = ffi.new('char**')
+        tmp_str = ffi.new("char**")
         self.odc_version(tmp_str)
-        versionstr = ffi.string(tmp_str[0]).decode('utf-8')
+        versionstr = ffi.string(tmp_str[0]).decode("utf-8")
 
         if parse_version(versionstr) < parse_version(__odc_version__):
             raise RuntimeError("Version of libodc found is too old. {} < {}".format(versionstr, __odc_version__))
 
-    def type_name(self, dtype: 'DataType'):
+    def type_name(self, dtype: "DataType"):  # noqa: F821
         name = self.__type_names.get(dtype, None)
         if name is not None:
             return name
 
-        name_tmp = ffi.new('char**')
+        name_tmp = ffi.new("char**")
         self.odc_column_type_name(dtype, name_tmp)
-        name = ffi.string(name_tmp[0]).decode('utf-8')
+        name = ffi.string(name_tmp[0]).decode("utf-8")
         self.__type_names[dtype] = name
         return name
 
     def __read_header(self):
-        with open(os.path.join(os.path.dirname(__file__), 'processed_odc.h'), 'r') as f:
+        with open(os.path.join(os.path.dirname(__file__), "processed_odc.h"), "r") as f:
             return f.read()
 
     def __check_error(self, fn, name):
@@ -106,9 +112,13 @@ class PatchedLib:
         If calls into the ODC library return errors, ensure that they get detected and reported
         by throwing an appropriate python exception.
         """
+
         def wrapped_fn(*args, **kwargs):
             retval = fn(*args, **kwargs)
-            if retval not in (self.__lib.ODC_SUCCESS, self.__lib.ODC_ITERATION_COMPLETE):
+            if retval not in (
+                self.__lib.ODC_SUCCESS,
+                self.__lib.ODC_ITERATION_COMPLETE,
+            ):
                 error_str = "Error in function {}: {}".format(name, self.__lib.odc_error_string(retval))
                 raise ODCException(error_str)
             return retval
@@ -136,4 +146,3 @@ try:
     lib = PatchedLib()
 except CFFIModuleLoadFailed as e:
     raise ImportError() from e
-

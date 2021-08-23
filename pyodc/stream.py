@@ -15,9 +15,9 @@ class Stream:
 
     def __init__(self, f):
         self.f = f
-        assert self.byteOrder in ['big', 'little']
-        assert self.floatMarker in ['>f', '<f']
-        assert self.doubleMarker in ['>d', '<d']
+        assert self.byteOrder in ["big", "little"]
+        assert self.floatMarker in [">f", "<f"]
+        assert self.doubleMarker in [">d", "<d"]
 
     def seek(self, nbytes):
         self.f.seek(nbytes, SEEK_SET)
@@ -31,7 +31,7 @@ class Stream:
         self.f.write(b)
 
     def encodeMarker(self, marker: int):
-        self.write(marker.to_bytes(2, byteorder='big', signed=False))
+        self.write(marker.to_bytes(2, byteorder="big", signed=False))
 
     def encodeUInt8(self, value: int):
         self.write(value.to_bytes(1, byteorder=self.byteOrder, signed=False))
@@ -46,7 +46,7 @@ class Stream:
         self.write(value.to_bytes(8, byteorder=self.byteOrder, signed=True))
 
     def encodeString(self, value: str):
-        self.encodeByteString(value.encode('utf-8'))
+        self.encodeByteString(value.encode("utf-8"))
 
     def encodeByteString(self, value: bytes):
         self.encodeInt32(len(value))
@@ -64,7 +64,7 @@ class Stream:
         return self.f.read(n)
 
     def readMarker(self):
-        return int.from_bytes(self.read(2), byteorder='big', signed=False)
+        return int.from_bytes(self.read(2), byteorder="big", signed=False)
 
     def readUInt8(self):
         return int.from_bytes(self.read(1), byteorder=self.byteOrder, signed=False)
@@ -79,7 +79,7 @@ class Stream:
         return int.from_bytes(self.read(8), byteorder=self.byteOrder, signed=True)
 
     def readString(self):
-        return self.readByteString().decode('utf-8')
+        return self.readByteString().decode("utf-8")
 
     def readByteString(self):
         return self.read(self.readInt32())
@@ -93,13 +93,13 @@ class Stream:
 
 class LittleEndianStream(Stream):
 
-    byteOrder = 'little'
-    floatMarker = '<f'
-    doubleMarker = '<d'
+    byteOrder = "little"
+    floatMarker = "<f"
+    doubleMarker = "<d"
 
 
 class BigEndianStream(Stream):
 
-    byteOrder = 'big'
-    floatMarker = '>f'
-    doubleMarker = '>d'
+    byteOrder = "big"
+    floatMarker = ">f"
+    doubleMarker = ">d"

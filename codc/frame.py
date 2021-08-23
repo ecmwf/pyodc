@@ -1,37 +1,39 @@
-
-from .constants import *
+from .constants import BITFIELD, DOUBLE, INTEGER, REAL, STRING, DataType
 from .lib import ffi, lib, memoize_constant
 
 try:
     from collections.abc import Iterable
 except ImportError:
     from collections import Iterable
+
 import codecs
+import os
+
 import numpy
 import pandas
-import os
 
 
 # A null-terminated UTF-8 decoder
 def null_utf_decoder(name):
-    if name == 'utf-8-null':
+    if name == "utf_8_null":
 
-        utf8_decoder = codecs.getdecoder('utf-8')
+        utf8_decoder = codecs.getdecoder("utf-8")
 
         return codecs.CodecInfo(
-            name='utf-8-null',
+            name="utf_8_null",
             encode=None,
-            decode=lambda b, e: utf8_decoder(b.split(b'\x00', 1)[0], e),
+            decode=lambda b, e: utf8_decoder(b.split(b"\x00", 1)[0], e),
             incrementalencoder=None,
             incrementaldecoder=None,
             streamwriter=None,
-            streamreader=None)
+            streamreader=None,
+        )
+
 
 codecs.register(null_utf_decoder)
 
 
 class ColumnInfo:
-
     class Bitfield:
         def __init__(self, name, size, offset):
             self.name = name
@@ -61,7 +63,6 @@ class ColumnInfo:
 
 
 class Frame:
-
     def __init__(self, table):
         self.__frame = table
         self.__columns = None
@@ -72,12 +73,12 @@ class Frame:
         columns = []
         for col in range(self.ncolumns):
 
-            pname = ffi.new('const char**')
-            ptype = ffi.new('int*')
-            pdatasize = ffi.new('int*')
-            pbitfield_count = ffi.new('int*')
+            pname = ffi.new("const char**")
+            ptype = ffi.new("int*")
+            pdatasize = ffi.new("int*")
+            pbitfield_count = ffi.new("int*")
             lib.odc_frame_column_attributes(self.__frame, col, pname, ptype, pdatasize, pbitfield_count)
-            name = ffi.string(pname[0]).decode('utf-8')
+            name = ffi.string(pname[0]).decode("utf-8")
             dtype = DataType(int(ptype[0]))
             datasize = int(pdatasize[0])
             bitfield_count = int(pbitfield_count[0])
@@ -92,15 +93,18 @@ class Frame:
                 bitfields = []
                 for n in range(bitfield_count):
 
-                    pbitfield_name = ffi.new('const char**')
-                    poffset = ffi.new('int*')
-                    psize = ffi.new('int*')
+                    pbitfield_name = ffi.new("const char**")
+                    poffset = ffi.new("int*")
+                    psize = ffi.new("int*")
                     lib.odc_frame_bitfield_attributes(self.__frame, col, n, pbitfield_name, poffset, psize)
 
-                    bitfields.append(ColumnInfo.Bitfield(
-                        name=ffi.string(pbitfield_name[0]).decode('utf-8'),
-                        size=int(psize[0]),
-                        offset=int(poffset[0])))
+                    bitfields.append(
+                        ColumnInfo.Bitfield(
+                            name=ffi.string(pbitfield_name[0]).decode("utf-8"),
+                            size=int(psize[0]),
+                            offset=int(poffset[0]),
+                        )
+                    )
 
             columns.append(ColumnInfo(name, col, dtype, datasize, bitfields))
 
@@ -117,7 +121,7 @@ class Frame:
         columns = {}
         ambiguous_columns = []
         for col in self.columns:
-            simple_name = col.name.split('@')[0]
+            simple_name = col.name.split("@")[0]
             if simple_name in columns:
                 ambiguous_columns.append(simple_name)
             columns[simple_name] = col
@@ -132,23 +136,40 @@ class Frame:
     @property
     @memoize_constant
     def nrows(self):
-        count = ffi.new('long*')
+        count = ffi.new("long*")
         lib.odc_frame_row_count(self.__frame, count)
         return int(count[0])
 
     @property
     @memoize_constant
     def ncolumns(self):
-        count = ffi.new('int*')
+        count = ffi.new("int*")
         lib.odc_frame_column_count(self.__frame, count)
         return int(count[0])
+
+    @property
+    @memoize_constant
+    def properties(self):
+        count = ffi.new("int*")
+        lib.odc_frame_properties_count(self.__frame, count)
+
+        properties = {}
+        for idx in range(int(count[0])):
+            key_temp = ffi.new("const char**")
+            value_temp = ffi.new("const char**")
+            lib.odc_frame_property_idx(self.__frame, idx, key_temp, value_temp)
+            key = ffi.string(key_temp[0]).decode("utf-8")
+            value = ffi.string(value_temp[0]).decode("utf-8")
+            properties[key] = value
+
+        return properties
 
     def dataframe(self, columns=None):
 
         # Some constants that are useful
 
-        pmissing_integer = ffi.new('long*')
-        pmissing_double = ffi.new('double*')
+        pmissing_integer = ffi.new("long*")
+        pmissing_double = ffi.new("double*")
         lib.odc_missing_integer(pmissing_integer)
         lib.odc_missing_double(pmissing_double)
         missing_integer = pmissing_integer[0]
@@ -181,7 +202,7 @@ class Frame:
             elif col.dtype == STRING:
                 string_cols.setdefault(col.datasize, []).append((name, col))
 
-        decoder = ffi.new('odc_decoder_t**')
+        decoder = ffi.new("odc_decoder_t**")
         lib.odc_new_decoder(decoder)
         decoder = ffi.gc(decoder[0], lib.odc_free_decoder)
 
@@ -190,12 +211,14 @@ class Frame:
         dataframes = []
         pos = 0
         string_seq = tuple((cols, "|S{}".format(dataSize), dataSize) for dataSize, cols in string_cols.items())
-        for cols, dtype, dsize in ((integer_cols, numpy.int64, 8),
-                                   (double_cols, numpy.double, 8)) + string_seq:
+        for cols, dtype, dsize in (
+            (integer_cols, numpy.int64, 8),
+            (double_cols, numpy.double, 8),
+        ) + string_seq:
 
             if len(cols) > 0:
 
-                array = numpy.empty((self.nrows, len(cols)), dtype=dtype, order='C')
+                array = numpy.empty((self.nrows, len(cols)), dtype=dtype, order="C")
 
                 pointer = array.ctypes.data
                 strides = array.ctypes.strides
@@ -204,9 +227,14 @@ class Frame:
                 for i, (name, col) in enumerate(cols):
 
                     colnames.append(name)
-                    lib.odc_decoder_add_column(decoder, col.name.encode('utf-8'))
-                    lib.odc_decoder_column_set_data_array(decoder, pos, dsize, strides[0],
-                                                          ffi.cast('void*', pointer + (i * strides[1])))
+                    lib.odc_decoder_add_column(decoder, col.name.encode("utf-8"))
+                    lib.odc_decoder_column_set_data_array(
+                        decoder,
+                        pos,
+                        dsize,
+                        strides[0],
+                        ffi.cast("void*", pointer + (i * strides[1])),
+                    )
                     pos += 1
 
                 dataframes.append(pandas.DataFrame(array, columns=colnames, copy=False))
@@ -216,7 +244,7 @@ class Frame:
         except AttributeError:
             threads = os.cpu_count()
 
-        prows_decoded = ffi.new('long*')
+        prows_decoded = ffi.new("long*")
         lib.odc_decode_threaded(decoder, self.__frame, prows_decoded, threads)
         assert prows_decoded[0] == self.nrows
 
@@ -232,7 +260,10 @@ class Frame:
                 # This is a bit yucky, but I haven't found any other way to decode from b'' strings to real ones
                 # Also note, result_type added to work around bug in pandas
                 # https://github.com/pandas-dev/pandas/issues/34529
-                dataframes[i] = df.apply(lambda x: x.astype('object').str.decode('utf-8-null'), result_type='expand')
+                dataframes[i] = df.apply(
+                    lambda x: x.astype("object").str.decode("utf_8_null"),
+                    result_type="expand",
+                )
 
         # And construct the DataFrame from the decoded data
 
@@ -240,4 +271,3 @@ class Frame:
             return dataframes[0]
         else:
             return pandas.concat(dataframes, copy=False, axis=1)
-
