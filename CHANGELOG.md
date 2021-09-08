@@ -1,6 +1,10 @@
 
 # Changelog for pyodc
 
+## 1.1.1
+
+* Fixed [ODB-534]: PyPI package is missing CHANGELOG
+
 ## 1.1.0
 
 * Fixed [ODB-533]: Decode data starting with missing values correctly
@@ -42,6 +46,8 @@
 * Initial version
 
 
+[ODB-534]: https://jira.ecmwf.int/browse/ODB-534
+[ODB-533]: https://jira.ecmwf.int/browse/ODB-533
 [ODB-530]: https://jira.ecmwf.int/browse/ODB-530
 [ODB-525]: https://jira.ecmwf.int/browse/ODB-525
 [ODB-524]: https://jira.ecmwf.int/browse/ODB-524
