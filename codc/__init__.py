@@ -4,4 +4,4 @@ from .frame import ColumnInfo, Frame
 from .lib import ODCException
 from .reader import Reader, read_odb
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
