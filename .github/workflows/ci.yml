@@ -158,7 +158,7 @@ jobs:
         python -m pip install setuptools wheel twine
 
     # Checks if the release version matches version declared in the package.
-    #   If they differ, the job will gracefully fail and subsequent step will be skipped.
+    #   Make sure to fail gracefully and continue on error, so we don't abort the complete workflow.
     - name: Check Version
       id: check-version
       shell: bash -eux {0}
@@ -168,6 +168,8 @@ jobs:
         version=$(python setup.py --version)
         test "$release" == "$version"
 
+    # Build the source distribution and publish it on PyPI.
+    #   Run this step only if the previous one was successful.
     - name: Build and Publish
       if: steps.check-version.outcome == 'success'
       env:
