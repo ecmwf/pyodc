@@ -1,6 +1,10 @@
 
 # Changelog for pyodc
 
+## 1.1.2
+
+* Fixed [#6]: pip install breaks codc
+
 ## 1.1.1
 
 * Fixed [ODB-534]: PyPI package is missing CHANGELOG
@@ -46,6 +50,7 @@
 * Initial version
 
 
+[#6]: https://github.com/ecmwf/pyodc/issues/6
 [ODB-534]: https://jira.ecmwf.int/browse/ODB-534
 [ODB-533]: https://jira.ecmwf.int/browse/ODB-533
 [ODB-530]: https://jira.ecmwf.int/browse/ODB-530
