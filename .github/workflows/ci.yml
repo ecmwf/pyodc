@@ -118,7 +118,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install pytest pytest-cov
-        test -f requirements.txt && python -m pip install -r requirements.txt || echo "Requirements file not found"
+        python -m pip install -r requirements.txt
+
+    - name: Verify Source Distribution
+      shell: bash -eux {0}
+      run: |
+        python setup.py sdist --dist-dir=${{ runner.temp }} --formats=gztar
+        python -m pip install ${{ runner.temp }}/$(python setup.py --name)-$(python setup.py --version).tar.gz
 
     - name: Run Tests
       env:
@@ -152,7 +158,7 @@ jobs:
         python -m pip install setuptools wheel twine
 
     # Checks if the release version matches version declared in the package.
-    #   If they differ, the job will gracefully fail and subsequent step will be skipped.
+    #   Make sure to fail gracefully and continue on error, so we don't abort the complete workflow.
     - name: Check Version
       id: check-version
       shell: bash -eux {0}
@@ -162,6 +168,8 @@ jobs:
         version=$(python setup.py --version)
         test "$release" == "$version"
 
+    # Build the source distribution and publish it on PyPI.
+    #   Run this step only if the previous one was successful.
     - name: Build and Publish
       if: steps.check-version.outcome == 'success'
       env:
@@ -176,63 +184,13 @@ jobs:
     name: notify
     runs-on: ubuntu-20.04
     needs:
-    - ci
     - qa
+    - ci
     - deploy
     if: always() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
     steps:
-    - name: Check Workflow Runs
-      id: check-workflow-runs
-      shell: bash -eux {0}
-      continue-on-error: true
-      run: |
-        # Check results of previous jobs in the same run.
-        #   This context has no access to special job status functions.
-        if [[ "${{ needs.ci.result }}" == "failure" || "${{ needs.qa.result }}" == "failure" || "${{ needs.deploy.result }}" == "failure" ]]
-        then
-          WORKFLOW_STATUS="failure"
-          MESSAGE_TITLE="failed"
-          MESSAGE_TEXT="Some jobs were not successful"
-          MESSAGE_COLOUR="#cb2431"
-        elif [[ "${{ needs.ci.result }}" == "cancelled" || "${{ needs.qa.result }}" == "cancelled" || "${{ needs.deploy.result }}" == "cancelled" ]]
-        then
-          WORKFLOW_STATUS="cancelled"
-          MESSAGE_TITLE="cancelled"
-          MESSAGE_TEXT="Some jobs were not successful"
-          MESSAGE_COLOUR="#959da5"
-        else
-          WORKFLOW_STATUS="success"
-          MESSAGE_TITLE="succeeded"
-          MESSAGE_TEXT="All jobs were successful"
-          MESSAGE_COLOUR="#28a745"
-        fi
-        echo ::set-output name=workflow-status::$WORKFLOW_STATUS
-        echo ::set-output name=message-title::$MESSAGE_TITLE
-        echo ::set-output name=message-text::$MESSAGE_TEXT
-        echo ::set-output name=message-colour::$MESSAGE_COLOUR
-
-        # Fetch previous workflow run conclusion via REST API for the same branch
-        BRANCH_NAME=${GITHUB_REF##refs/heads/}
-        PREVIOUS_CONCLUSION=$( curl https://api.github.com/repos/${{ github.repository }}/actions/workflows/ci.yml/runs\?branch\=$BRANCH_NAME\&status\=completed\&per_page\=1 | jq .workflow_runs\[0\].conclusion | tr -d '"' )
-        echo ::set-output name=previous-conclusion::$PREVIOUS_CONCLUSION
-
-    # Sends a status message to the configured MS Teams channel.
-    #   It will get triggered in case:
-    #   - current workflow run has failed
-    #   - this is the first successful run after a failure
-    #   - this is the first successful run after a cancellation
-    - name: Send a Message to Microsoft Teams
-      uses: aliencube/microsoft-teams-actions@v0.8.0
-      if: steps.check-workflow-runs.outputs.workflow-status == 'failure' || contains(steps.check-workflow-runs.outputs.previous-conclusion, 'failure') || steps.check-workflow-runs.outputs.previous-conclusion == 'cancelled'
-      env:
-        MESSAGE_TITLE: ${{ steps.check-workflow-runs.outputs.message-title }}
-        MESSAGE_TEXT: ${{ steps.check-workflow-runs.outputs.message-text }}
-        MESSAGE_COLOUR: ${{ steps.check-workflow-runs.outputs.message-colour }}
+    - name: Notify Teams
+      uses: ecmwf-actions/notify-teams@v1
       with:
-        webhook_uri: ${{ secrets.MS_TEAMS_INCOMING_WEBHOOK }}
-        title: '[${{ github.repository }}] Run ${{ env.MESSAGE_TITLE }}: ${{ github.workflow }} - ${{ github.ref }} (${{ github.sha }})'
-        summary: '${{ github.workflow }}: ${{ env.MESSAGE_TEXT }}'
-        text: '${{ github.workflow }}: ${{ env.MESSAGE_TEXT }}'
-        theme_color: '${{ env.MESSAGE_COLOUR }}'
-        sections: '[{"facts":[{"name":"Code QA","value":"${{ needs.qa.result }}"},{"name":"Build & Test","value":"${{ needs.ci.result }}"},{"name":"Deploy","value":"${{ needs.deploy.result }}"}]}]'
-        actions: '[{"@type":"OpenUri","name":"View workflow run","targets":[{"os":"default","uri":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}]}]'
+        incoming_webhook: ${{ secrets.MS_TEAMS_INCOMING_WEBHOOK }}
+        needs_context: ${{ toJSON(needs) }}
