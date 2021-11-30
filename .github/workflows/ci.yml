@@ -1,6 +1,6 @@
 name: ci
 
-# Controls when the action will run
+# Controls when the workflow will run
 on:
 
   # Trigger the workflow on all pushes
@@ -17,180 +17,25 @@ on:
   workflow_dispatch: ~
 
 jobs:
-  qa:
-    name: qa
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
 
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.x
-
-    - name: Install Python Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install black flake8 isort
-
-    - name: Check isort
-      run: isort --check .
-
-    - name: Check black
-      run: black --check .
-
-    - name: Check flake8
-      run: flake8 .
-
+  # Calls a reusable CI workflow to qa, test & deploy the current repository.
+  #   It will pull in all needed dependencies and produce a code coverage report on success.
+  #   If all checks were successful and a new release tag pushed, the package will be published on PyPI.
+  #   In case the job fails, a message will be posted to a Microsoft Teams channel.
   ci:
     name: ci
-    needs: qa
-    strategy:
-      matrix:
-        name:
-        - gnu-10@ubuntu-20.04
-        - clang-12@ubuntu-20.04
-        - gnu-10@ubuntu-18.04
-        - clang-9@ubuntu-18.04
-        - gnu-10@macos-10.15
-        - clang-12@macos-10.15
-        include:
-        - name: gnu-10@ubuntu-20.04
-          os: ubuntu-20.04
-          compiler: gnu-10
-          compiler_cc: gcc-10
-          compiler_cxx: g++-10
-          compiler_fc: gfortran-10
-        - name: clang-12@ubuntu-20.04
-          os: ubuntu-20.04
-          compiler: clang-12
-          compiler_cc: clang-12
-          compiler_cxx: clang++-12
-          compiler_fc: gfortran-10
-        - name: gnu-10@ubuntu-18.04
-          os: ubuntu-18.04
-          compiler: gnu-10
-          compiler_cc: gcc-10
-          compiler_cxx: g++-10
-          compiler_fc: gfortran-10
-        - name: clang-9@ubuntu-18.04
-          os: ubuntu-18.04
-          compiler: clang-9
-          compiler_cc: clang-9
-          compiler_cxx: clang++-9
-          compiler_fc: gfortran-9
-        - name: gnu-10@macos-10.15
-          os: macos-10.15
-          compiler: gnu-10
-          compiler_cc: gcc-10
-          compiler_cxx: g++-10
-          compiler_fc: gfortran-10
-        # Xcode compiler requires empty environment variables, so we pass null (~) here
-        - name: clang-12@macos-10.15
-          os: macos-10.15
-          compiler: clang-12
-          compiler_cc: ~
-          compiler_cxx: ~
-          compiler_fc: gfortran-10
-    runs-on: ${{ matrix.os }}
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Install Dependencies
-      id: install-dependencies
-      uses: ecmwf-actions/build-package@v1
-      with:
+    uses: ecmwf-actions/reusable-workflows/.github/workflows/ci-python.yml@v1
+    with:
+      codecov_upload: true
+      notify_teams: true
+      build_package_inputs: |
         self_build: false
         dependencies: |
           ecmwf/ecbuild
           ecmwf/eckit
           ecmwf/odc
         dependency_branch: develop
-
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.x
-
-    - name: Install Python Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install pytest pytest-cov
-        python -m pip install -r requirements.txt
-
-    - name: Verify Source Distribution
-      shell: bash -eux {0}
-      run: |
-        python setup.py sdist --dist-dir=${{ runner.temp }} --formats=gztar
-        python -m pip install ${{ runner.temp }}/$(python setup.py --name)-$(python setup.py --version).tar.gz
-
-    - name: Run Tests
-      env:
-        LD_LIBRARY_PATH: ${{ steps.install-dependencies.outputs.lib_path }}
-      shell: bash -eux {0}
-      run: |
-        DYLD_LIBRARY_PATH=${{ env.LD_LIBRARY_PATH }} python -m pytest --cov=./ --cov-report=xml
-        python -m coverage report
-
-    - name: Codecov Upload
-      if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
-      uses: codecov/codecov-action@v2
-
-  deploy:
-    name: deploy
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    needs: ci
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.x
-
-    - name: Setup Python Environment
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install setuptools wheel twine
-
-    # Checks if the release version matches version declared in the package.
-    #   Make sure to fail gracefully and continue on error, so we don't abort the complete workflow.
-    - name: Check Version
-      id: check-version
-      shell: bash -eux {0}
-      continue-on-error: true
-      run: |
-        release=${GITHUB_REF##*/}
-        version=$(python setup.py --version)
-        test "$release" == "$version"
-
-    # Build the source distribution and publish it on PyPI.
-    #   Run this step only if the previous one was successful.
-    - name: Build and Publish
-      if: steps.check-version.outcome == 'success'
-      env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      shell: bash -eux {0}
-      run: |
-        python setup.py sdist
-        twine upload dist/*
-
-  notify:
-    name: notify
-    runs-on: ubuntu-20.04
-    needs:
-    - qa
-    - ci
-    - deploy
-    if: always() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
-    steps:
-    - name: Notify Teams
-      uses: ecmwf-actions/notify-teams@v1
-      with:
-        incoming_webhook: ${{ secrets.MS_TEAMS_INCOMING_WEBHOOK }}
-        needs_context: ${{ toJSON(needs) }}
+    secrets:
+      pypi_username: ${{ secrets.PYPI_USERNAME }}
+      pypi_password: ${{ secrets.PYPI_PASSWORD }}
+      incoming_webhook: ${{ secrets.MS_TEAMS_INCOMING_WEBHOOK }}

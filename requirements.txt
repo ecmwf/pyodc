@@ -1,5 +1,5 @@
-cffi==1.14.5
-pandas==1.2.5
-pytest==6.2.4
-pytest-cov==2.12.1
-pytest-flakes==4.0.3
+cffi
+pandas
+pytest
+pytest-cov
+pytest-flakes
