@@ -1,6 +1,10 @@
 
 # Changelog for pyodc
 
+## 1.1.3
+
+* Improved github/ci integration
+
 ## 1.1.2
 
 * Fixed [#6]: pip install breaks codc
