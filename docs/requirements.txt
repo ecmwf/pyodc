@@ -1,4 +1,4 @@
-ipykernel==5.5.3
-nbsphinx==0.8.6
+ipykernel
+nbsphinx
 sphinx-rtd-theme==0.5.2
-pandas==1.2.4
+pandas

@@ -33,18 +33,44 @@ Optional
 
 
 .. index:: Installation
-   single: Installation; PIP
+   single: Installation; PyPI
 
 Python Package Installer
 ------------------------
 
-Install the package via PIP:
+Install the package via `PyPI`_:
 
 .. code-block:: shell
 
    pip install pyodc
 
-Check if the module was installed correctly:
+
+.. index::
+   single: Installation; Conda Forge
+
+Conda Forge
+-----------
+
+Install the package in `Conda`_ environment via `conda-forge`_ channel:
+
+.. code-block:: shell
+
+   conda install -c conda-forge pyodc
+
+
+.. note::
+
+   To use **codc** module, you can install an optional **odc** dependency via **conda-forge** channel:
+
+   .. code-block:: shell
+
+      conda install -c conda-forge odc
+
+
+Check Installation
+------------------
+
+To check if the modules were installed correctly:
 
 .. code-block:: shell
 
@@ -53,12 +79,6 @@ Check if the module was installed correctly:
     >>> import codc # optional
 
 
-.. index::
-   single: Installation; Conda
-
-Conda Forge
------------
-
-.. todo::
-
-   **pyodc** package is not available through Conda yet.
+.. _`PyPI`: https://pypi.org
+.. _`Conda`: https://docs.conda.io
+.. _`conda-forge`: https://conda-forge.org
