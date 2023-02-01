@@ -10,7 +10,6 @@ from pyodc.stream import LittleEndianStream
 
 
 def _check_decode(cdc, encoded, check):
-
     st = LittleEndianStream(encoded)
     v = cdc.decode(st)
     assert v == check

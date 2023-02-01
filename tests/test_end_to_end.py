@@ -29,7 +29,6 @@ SAMPLE_PROPERTIES = {
 
 
 def encode_sample(odyssey, f):
-
     df = pandas.DataFrame(SAMPLE_DATA)
 
     types = {
@@ -50,7 +49,6 @@ def encode_sample(odyssey, f):
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_filename(odyssey):
-
     with NamedTemporaryFile() as fencode:
         df = encode_sample(odyssey, fencode)
 
@@ -68,7 +66,6 @@ def test_encode_decode_filename(odyssey):
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_file_object(odyssey):
-
     with NamedTemporaryFile() as fencode:
         df = encode_sample(odyssey, fencode)
 
@@ -87,7 +84,6 @@ def test_encode_decode_file_object(odyssey):
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_simple_columns(odyssey):
-
     with NamedTemporaryFile() as fencode:
         df = encode_sample(odyssey, fencode)
 
@@ -111,7 +107,6 @@ def test_aggregate_non_matching(odyssey):
     sample2 = {"col2": ["aaa", "bbb", "ccc"]}
 
     with NamedTemporaryFile() as fencode:
-
         odyssey.encode_odb(pandas.DataFrame(sample1), fencode)
         odyssey.encode_odb(pandas.DataFrame(sample2), fencode)
         fencode.flush()
@@ -179,7 +174,6 @@ def test_encode_decode_properties(odyssey):
     """Check that additional properties are encoded and decoded properly."""
 
     with NamedTemporaryFile() as fencode:
-
         # Test both by passing file handle and name to the encoding function.
         #   Please see ODB-523 for more information.
         for f in [fencode, fencode.name]:
