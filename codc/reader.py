@@ -13,7 +13,6 @@ class Reader:
     __frames = None
 
     def __init__(self, source, aggregated=True, max_aggregated=-1):
-
         self.__aggregated = aggregated
         self.__max_aggregated = max_aggregated
 
@@ -40,7 +39,6 @@ class Reader:
                 if self.__aggregated
                 else lib.odc_next_frame(frame)
             ) != lib.ODC_ITERATION_COMPLETE:
-
                 copy_frame = ffi.new("odc_frame_t**")
                 lib.odc_copy_frame(frame, copy_frame)
                 self.__frames.append(Frame(ffi.gc(copy_frame[0], lib.odc_free_frame)))

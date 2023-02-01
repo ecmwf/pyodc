@@ -42,7 +42,6 @@ class PatchedLib:
     __type_names = {}
 
     def __init__(self):
-
         ffi.cdef(self.__read_header())
 
         libnames = [

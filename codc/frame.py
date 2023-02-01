@@ -16,7 +16,6 @@ import pandas
 # A null-terminated UTF-8 decoder
 def null_utf_decoder(name):
     if name == "utf_8_null":
-
         utf8_decoder = codecs.getdecoder("utf-8")
 
         return codecs.CodecInfo(
@@ -72,7 +71,6 @@ class Frame:
     def columns(self):
         columns = []
         for col in range(self.ncolumns):
-
             pname = ffi.new("const char**")
             ptype = ffi.new("int*")
             pdatasize = ffi.new("int*")
@@ -92,7 +90,6 @@ class Frame:
             if dtype == BITFIELD:
                 bitfields = []
                 for n in range(bitfield_count):
-
                     pbitfield_name = ffi.new("const char**")
                     poffset = ffi.new("int*")
                     psize = ffi.new("int*")
@@ -165,7 +162,6 @@ class Frame:
         return properties
 
     def dataframe(self, columns=None):
-
         # Some constants that are useful
 
         pmissing_integer = ffi.new("long*")
@@ -215,9 +211,7 @@ class Frame:
             (integer_cols, numpy.int64, 8),
             (double_cols, numpy.double, 8),
         ) + string_seq:
-
             if len(cols) > 0:
-
                 array = numpy.empty((self.nrows, len(cols)), dtype=dtype, order="C")
 
                 pointer = array.ctypes.data
@@ -225,7 +219,6 @@ class Frame:
 
                 colnames = []
                 for i, (name, col) in enumerate(cols):
-
                     colnames.append(name)
                     lib.odc_decoder_add_column(decoder, col.name.encode("utf-8"))
                     lib.odc_decoder_column_set_data_array(
