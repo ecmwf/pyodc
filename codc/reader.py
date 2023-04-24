@@ -54,7 +54,7 @@ def _read_odb_generator(source, columns=None, aggregated=True, max_aggregated=-1
 
 def _read_odb_oneshot(source, columns=None):
     reduced = pandas.concat(_read_odb_generator(source, columns), sort=False, ignore_index=True)
-    for name, data in reduced.iteritems():
+    for name, data in reduced.items():
         if data.dtype == "object":
             data.where(pandas.notnull(data), None, inplace=True)
     return reduced
