@@ -185,14 +185,12 @@ def test_frame_extract_bits(odyssey):
     df = r.frames[0].dataframe()
 
     for frame_col in r.frames[0].columns:
-
         if frame_col.dtype != odyssey.BITFIELD:
             continue
 
         col = df[frame_col.name]
 
         for bitfield in frame_col.bitfields:
-
             # Calculate this explicitly
             mask = (1 << bitfield.size) - 1
             bitvals = np.right_shift(col, bitfield.offset) & mask

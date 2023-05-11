@@ -168,7 +168,6 @@ class Frame:
         return properties
 
     def dataframe(self, columns=None):
-
         # Are there any bitfield columns we need to consider?
         original_columns = columns
         bitfields = []
@@ -176,15 +175,15 @@ class Frame:
         if columns is not None:
             final_columns = set()
             for colname in columns:
-                dotpos = colname.find('.')
+                dotpos = colname.find(".")
                 if dotpos == -1:
                     final_columns.add(colname)
                 else:
                     column_name = colname[:dotpos]
-                    sp = colname[dotpos + 1:].split('@')
+                    sp = colname[dotpos + 1 :].split("@")
                     bitfield_name = sp[0]
                     if len(sp) > 1:
-                        column_name += '@' + sp[1]
+                        column_name += "@" + sp[1]
                     final_columns.add(column_name)
                     bitfields.append((bitfield_name, column_name, colname))
             columns = list(final_columns)
@@ -195,7 +194,6 @@ class Frame:
         # decoded columns as is possible
 
         if bitfields:
-
             extracted_columns = set()
             for bitfield_name, column_name, output_name in bitfields:
                 assert df[column_name].dtype == np.int64
@@ -215,7 +213,6 @@ class Frame:
         return df
 
     def _dataframe_internal(self, columns=None):
-
         # Some constants that are useful
 
         pmissing_integer = ffi.new("long*")
