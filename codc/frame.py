@@ -9,7 +9,7 @@ except ImportError:
 import codecs
 import os
 
-import numpy
+import numpy as np
 import pandas
 
 
@@ -39,6 +39,12 @@ class ColumnInfo:
             self.name = name
             self.size = size
             self.offset = offset
+
+        def __eq__(self, other):
+            return self.name == other.name and self.size == other.size and self.offset == other.offset
+
+        def __str__(self):
+            return f"bits(name={self.name}, size={self.size}, offset={self.offset})"
 
     def __init__(self, name, idx, dtype, datasize, bitfields):
         self.name = name
@@ -166,6 +172,54 @@ class Frame:
 
     def dataframe(self, columns=None):
 
+        # Are there any bitfield columns we need to consider?
+
+        original_columns = columns
+        bitfields = []
+
+        if columns is not None:
+            final_columns = set()
+            for colname in columns:
+                dotpos = colname.find('.')
+                if dotpos == -1:
+                    final_columns.add(colname)
+                else:
+                    column_name = colname[:dotpos]
+                    sp = colname[dotpos + 1:].split('@')
+                    bitfield_name = sp[0]
+                    if len(sp) > 1:
+                        column_name += '@' + sp[1]
+                    final_columns.add(column_name)
+                    bitfields.append((bitfield_name, column_name, colname))
+            columns = list(final_columns)
+
+        df = self._dataframe_internal(columns)
+
+        # If there are any bitfields that need extraction, do it here, and remove any temporarily
+        # decoded columns as is possible
+
+        if bitfields:
+
+            extracted_columns = set()
+            for bitfield_name, column_name, output_name in bitfields:
+                assert df[column_name].dtype == np.int64
+                col = self.column_dict[column_name]
+                bf = next((b for b in col.bitfields if b.name == bitfield_name))
+                mask = (1 << bf.size) - 1
+                new_column = np.right_shift(df[column_name], bf.offset) & mask
+                if bf.size == 1:
+                    new_column = new_column.astype(bool)
+                df[output_name] = new_column
+                extracted_columns.add(column_name)
+
+            for column in extracted_columns:
+                if column not in original_columns:
+                    del df[column]
+
+        return df
+
+    def _dataframe_internal(self, columns=None):
+
         # Some constants that are useful
 
         pmissing_integer = ffi.new("long*")
@@ -174,6 +228,8 @@ class Frame:
         lib.odc_missing_double(pmissing_double)
         missing_integer = pmissing_integer[0]
         missing_double = pmissing_double[0]
+
+        # If no column info specified, use the defaults
 
         if columns is None:
             columns = [c.name for c in self.columns]
@@ -212,13 +268,13 @@ class Frame:
         pos = 0
         string_seq = tuple((cols, "|S{}".format(dataSize), dataSize) for dataSize, cols in string_cols.items())
         for cols, dtype, dsize in (
-            (integer_cols, numpy.int64, 8),
-            (double_cols, numpy.double, 8),
+            (integer_cols, np.int64, 8),
+            (double_cols, np.double, 8),
         ) + string_seq:
 
             if len(cols) > 0:
 
-                array = numpy.empty((self.nrows, len(cols)), dtype=dtype, order="C")
+                array = np.empty((self.nrows, len(cols)), dtype=dtype, order="C")
 
                 pointer = array.ctypes.data
                 strides = array.ctypes.strides
@@ -252,9 +308,9 @@ class Frame:
 
         for i in range(len(dataframes)):
             df = dataframes[i]
-            if df.dtypes[0] == numpy.int64:
+            if df.dtypes[0] == np.int64:
                 df.mask(df == missing_integer, inplace=True)
-            elif df.dtypes[0] == numpy.double:
+            elif df.dtypes[0] == np.double:
                 df.mask(df == missing_double, inplace=True)
             else:
                 # This is a bit yucky, but I haven't found any other way to decode from b'' strings to real ones
