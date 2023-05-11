@@ -129,7 +129,6 @@ class Frame:
     """
 
     def __init__(self, source):
-
         # Read marker and magic
 
         m = source.read(2)
@@ -338,7 +337,6 @@ class Frame:
 
         lastStartCol = None
         for row in range(self._numberOfRows):
-
             startCol = self._stream.readMarker()
 
             if lastStartCol is None:

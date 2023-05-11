@@ -142,7 +142,6 @@ class ConstantString(Constant):
 
 
 class NumericBase(Codec):
-
     _numChanges = None
     _data = None
     accepted_types = None
@@ -163,7 +162,6 @@ class NumericBase(Codec):
 
 
 class ConstantOrMissing(NumericBase):
-
     internal_missing_value = 0xFF
     accepted_types = (DataType.INTEGER, DataType.BITFIELD)
 
@@ -189,12 +187,10 @@ class ConstantOrMissing(NumericBase):
 
 
 class RealConstantOrMissing(ConstantOrMissing):
-
     accepted_types = (DataType.DOUBLE, DataType.REAL)
 
 
 class OffsetInteger(NumericBase):
-
     internal_missing_value = None
     max_range = 0
     accepted_types = (DataType.INTEGER, DataType.BITFIELD)
@@ -221,7 +217,6 @@ class OffsetInteger(NumericBase):
 
 
 class Int8(OffsetInteger):
-
     max_range = 0xFF
     accepts_missing = False
 
@@ -241,7 +236,6 @@ class Int8Missing(Int8):
 
 
 class Int16(OffsetInteger):
-
     max_range = 0xFFFF
     accepts_missing = False
 
@@ -261,7 +255,6 @@ class Int16Missing(Int16):
 
 
 class Int32(NumericBase):
-
     max_range = 0xFFFFFFFE
     accepts_missing = True
     internal_missing_value = 0x7FFFFFFF
@@ -287,7 +280,6 @@ class Int32(NumericBase):
 
 
 class LongReal(NumericBase):
-
     accepted_types = (DataType.DOUBLE, DataType.REAL)
 
     def encode(self, stream, value):
@@ -298,7 +290,6 @@ class LongReal(NumericBase):
 
 
 class ShortReal(NumericBase):
-
     internal_missing_value = INTERNAL_REAL_MISSING[0]
     accepted_types = (DataType.DOUBLE, DataType.REAL)
 
@@ -319,13 +310,11 @@ class ShortReal2(ShortReal):
 
 
 class Int8String(Codec):
-
     missing_value = MISSING_INTEGER
     type = DataType.STRING
     _numChanges = None
 
     def __init__(self, *args, values=None, data=None, **kwargs):
-
         self._data = data
         assert values is not None
         self.values = values
@@ -335,7 +324,6 @@ class Int8String(Codec):
 
     @classmethod
     def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
-
         assert not data.hasnans
         assert data_type == DataType.STRING
         return cls(column_name, 0, 0, data_type, values=data.unique(), data=data)
@@ -405,7 +393,6 @@ class Int16String(Int8String):
 
 
 def select_codec(column_name: str, data: pd.Series, data_type):
-
     # If data types are not specified, determine them from the pandas Series
 
     if data_type is None:
@@ -430,7 +417,6 @@ def select_codec(column_name: str, data: pd.Series, data_type):
     codec_class = None
 
     if data_type in (DataType.INTEGER, DataType.BITFIELD):
-
         range = data.max() - data.min()
         has_missing = data.hasnans
 
@@ -446,7 +432,6 @@ def select_codec(column_name: str, data: pd.Series, data_type):
                     break
 
     elif data_type == DataType.DOUBLE:
-
         if data.nunique() == 1:
             if data.hasnans:
                 codec_class = RealConstantOrMissing
@@ -456,7 +441,6 @@ def select_codec(column_name: str, data: pd.Series, data_type):
             codec_class = LongReal
 
     elif data_type == DataType.REAL:
-
         if data.nunique() == 1:
             if data.hasnans:
                 codec_class = RealConstantOrMissing
@@ -470,7 +454,6 @@ def select_codec(column_name: str, data: pd.Series, data_type):
             codec_class = ShortReal2
 
     elif data_type == DataType.STRING:
-
         if data.nunique() == 1 and not data.hasnans:
             codec_class = ConstantString
         elif data.nunique() <= 256:

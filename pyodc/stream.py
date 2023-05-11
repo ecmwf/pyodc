@@ -8,7 +8,6 @@ from io import SEEK_SET
 
 
 class Stream:
-
     byteOrder = None
     floatMarker = None
     doubleMarker = None
@@ -92,14 +91,12 @@ class Stream:
 
 
 class LittleEndianStream(Stream):
-
     byteOrder = "little"
     floatMarker = "<f"
     doubleMarker = "<d"
 
 
 class BigEndianStream(Stream):
-
     byteOrder = "big"
     floatMarker = ">f"
     doubleMarker = ">d"

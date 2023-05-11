@@ -9,7 +9,6 @@ from pyodc.stream import LittleEndianStream
 
 
 def _check_encode(codec, series, encode_compare):
-
     f = io.BytesIO()
     st = LittleEndianStream(f)
 
@@ -21,11 +20,9 @@ def _check_encode(codec, series, encode_compare):
 
 
 def test_int8_range_encoding():
-
     # Also test with negative numbers!
 
     for offset in (0, -100):
-
         s = pd.Series((1 + offset, 2**8 + offset))
         c = select_codec("column", s, None)
 
@@ -43,7 +40,6 @@ def test_int16_range_encoding_minimal():
     # Also test with negative numbers!
 
     for offset in (0, -10000):
-
         s = pd.Series((1 + offset, 2**8 + offset + 1))
         c = select_codec("column", s, None)
 
@@ -54,11 +50,9 @@ def test_int16_range_encoding_minimal():
 
 
 def test_int16_range_encoding_maximal():
-
     # Also test with negative numbers!
 
     for offset in (0, -10000):
-
         s = pd.Series((1 + offset, 2**8 + offset, 2**16 + offset))
         c = select_codec("column", s, None)
 
@@ -92,11 +86,9 @@ def test_wider_range_unsupported():
 
 
 def test_int8_missing_range_encoding():
-
     # Also test with negative numbers!
 
     for offset in (0, -100):
-
         s = pd.Series((1 + offset, None, 2**8 + offset - 1))
         c = select_codec("column", s, None)
 
@@ -107,11 +99,9 @@ def test_int8_missing_range_encoding():
 
 
 def test_int16_missing_range_encoding_minimal():
-
     # Also test with negative numbers!
 
     for offset in (0, -100):
-
         s = pd.Series((1 + offset, None, 2**8 + offset))
         c = select_codec("column", s, None)
 
@@ -122,11 +112,9 @@ def test_int16_missing_range_encoding_minimal():
 
 
 def test_int16_missing_range_encoding_maximal():
-
     # Also test with negative numbers!
 
     for offset in (0, -100):
-
         s = pd.Series((1 + offset, None, 2**16 + offset - 1))
         c = select_codec("column", s, None)
 
