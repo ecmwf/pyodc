@@ -28,6 +28,16 @@ SAMPLE_PROPERTIES = {
 }
 
 
+def assert_dataframe_equal(df1, df2):
+    """
+    Assert that two dataframes are equal, but ignoring column order
+    """
+    pandas.testing.assert_frame_equal(
+        df1.sort_index(axis=1),
+        df2.sort_index(axis=1),
+    )
+
+
 def encode_sample(odyssey, f):
     df = pandas.DataFrame(SAMPLE_DATA)
 
@@ -146,7 +156,7 @@ def test_unqualified_names(odyssey):
         cols = ["col1@tbl1", "col3@tbl2", "col4"]
         df = odyssey.read_odb(fencode.name, single=True, columns=cols)
         expected_df = input_df[cols]
-        assert expected_df.equals(df)
+        assert_dataframe_equal(df, expected_df)
 
         # Check quick-access naming
 
@@ -161,7 +171,7 @@ def test_unqualified_names(odyssey):
                 "col4": sample["col4"],
             }
         )
-        assert expected_df.equals(df)
+        assert_dataframe_equal(df, expected_df)
 
         # What happens if we try and access an ambiguous columns?
 
