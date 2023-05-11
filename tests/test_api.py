@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import pytest
 from conftest import codc, odc_modules
 
@@ -171,3 +172,33 @@ def test_frame_column_bitfields(odyssey):
                 assert bf.name == bf_expected["name"]
                 assert bf.size == bf_expected["size"]
                 assert bf.offset == bf_expected["offset"]
+
+
+@pytest.mark.parametrize("odyssey", odc_modules)
+def test_frame_extract_bits(odyssey):
+    """
+    Check that we can extract specific bitfields explicitly
+    """
+    r = odyssey.Reader(data_file1, aggregated=True)
+    assert len(r.frames) == 1
+    df = r.frames[0].dataframe()
+
+    for frame_col in r.frames[0].columns:
+        if frame_col.dtype != odyssey.BITFIELD:
+            continue
+
+        col = df[frame_col.name]
+
+        for bitfield in frame_col.bitfields:
+            # Calculate this explicitly
+            mask = (1 << bitfield.size) - 1
+            bitvals = np.right_shift(col, bitfield.offset) & mask
+            if bitfield.size == 1:
+                bitvals = bitvals.astype(bool)
+
+            # Now ask for this value in the columns
+            full_bitfield_name = f"{frame_col.name.split('@')[0]}.{bitfield.name}@{frame_col.name.split('@')[1]}"
+            df_direct = odyssey.read_odb(data_file1, columns=[full_bitfield_name], single=True)
+
+            assert df_direct.shape[1] == 1
+            assert all(df_direct[full_bitfield_name] == bitvals)

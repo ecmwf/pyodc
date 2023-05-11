@@ -21,7 +21,6 @@ from conftest import odc_modules
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_initial_missing1(odyssey):
-
     check_data = {
         "stringval": ["", "testing"],
         "intval": [None, 12345678],
@@ -44,7 +43,6 @@ def test_initial_missing1(odyssey):
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_initial_missing2(odyssey):
-
     check_data = {
         "stringval": ["", "testing"],
         "intval": [None, 12345678],

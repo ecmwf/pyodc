@@ -2,4 +2,5 @@
 max-line-length = 120
 extend-ignore =
     E203
-    F401 */**/__init__.py
+per-file-ignores =
+    __init__.py:F401

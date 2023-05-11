@@ -29,6 +29,7 @@ except ImportError:
 
 from itertools import accumulate, chain
 
+import numpy as np
 import pandas as pd
 
 
@@ -78,6 +79,9 @@ class ColumnInfo:
         def __eq__(self, other):
             return self.name == other.name and self.size == other.size and self.offset == other.offset
 
+        def __str__(self):
+            return f"bits(name={self.name}, size={self.size}, offset={self.offset})"
+
     def __init__(self, name, idx, dtype, datasize, bitfields):
         self.name = name
         self.dtype = dtype
@@ -125,7 +129,6 @@ class Frame:
     """
 
     def __init__(self, source):
-
         # Read marker and magic
 
         m = source.read(2)
@@ -250,6 +253,62 @@ class Frame:
         Returns:
             DataFrame
         """
+
+        # Are there any bitfield columns we need to consider?
+
+        original_columns = columns
+        bitfields = []
+
+        if columns is not None:
+            final_columns = set()
+            for colname in columns:
+                dotpos = colname.find(".")
+                if dotpos == -1:
+                    final_columns.add(colname)
+                else:
+                    column_name = colname[:dotpos]
+                    sp = colname[dotpos + 1 :].split("@")
+                    bitfield_name = sp[0]
+                    if len(sp) > 1:
+                        column_name += "@" + sp[1]
+                    final_columns.add(column_name)
+                    bitfields.append((bitfield_name, column_name, colname))
+            columns = list(final_columns)
+
+        df = self._dataframe_internal(columns)
+
+        # If there are any bitfields that need extraction, do it here, and remove any temporarily
+        # decoded columns as is possible
+
+        if bitfields:
+            extracted_columns = set()
+            for bitfield_name, column_name, output_name in bitfields:
+                assert df[column_name].dtype == np.int64
+                col = self.column_dict[column_name]
+                bf = next((b for b in col.bitfields if b.name == bitfield_name))
+                mask = (1 << bf.size) - 1
+                new_column = np.right_shift(df[column_name], bf.offset) & mask
+                if bf.size == 1:
+                    new_column = new_column.astype(bool)
+                df[output_name] = new_column
+                extracted_columns.add(column_name)
+
+            for column in extracted_columns:
+                if column not in original_columns:
+                    del df[column]
+
+        return df
+
+    def _dataframe_internal(self, columns=None):
+        """
+        Decodes the frame into a pandas dataframe
+
+        Parameters:
+            columns: List of columns to decode
+
+        Returns:
+            DataFrame
+        """
         # TODO: Properly skip decoding columns that aren't needed
         column_codecs = self._column_codecs
 
@@ -277,7 +336,6 @@ class Frame:
 
         lastStartCol = None
         for row in range(self._numberOfRows):
-
             startCol = self._stream.readMarker()
 
             if lastStartCol is None:
@@ -308,6 +366,7 @@ class Frame:
                 [df] + [f.dataframe(columns) for f in self._trailingAggregatedFrames],
                 copy=False,
                 axis=0,
+                ignore_index=True,
             )
         else:
             return df

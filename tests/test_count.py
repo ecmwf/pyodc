@@ -8,7 +8,6 @@ data_file1 = os.path.join(os.path.dirname(__file__), "data/data1.odb")
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_count(odyssey):
-
     # print("We are here")
     # print(odyssey.__version__)
 

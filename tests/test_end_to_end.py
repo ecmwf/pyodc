@@ -28,8 +28,17 @@ SAMPLE_PROPERTIES = {
 }
 
 
-def encode_sample(odyssey, f):
+def assert_dataframe_equal(df1, df2):
+    """
+    Assert that two dataframes are equal, but ignoring column order
+    """
+    pandas.testing.assert_frame_equal(
+        df1.sort_index(axis=1),
+        df2.sort_index(axis=1),
+    )
 
+
+def encode_sample(odyssey, f):
     df = pandas.DataFrame(SAMPLE_DATA)
 
     types = {
@@ -50,7 +59,6 @@ def encode_sample(odyssey, f):
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_filename(odyssey):
-
     with NamedTemporaryFile() as fencode:
         df = encode_sample(odyssey, fencode)
 
@@ -68,7 +76,6 @@ def test_encode_decode_filename(odyssey):
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_file_object(odyssey):
-
     with NamedTemporaryFile() as fencode:
         df = encode_sample(odyssey, fencode)
 
@@ -87,7 +94,6 @@ def test_encode_decode_file_object(odyssey):
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_simple_columns(odyssey):
-
     with NamedTemporaryFile() as fencode:
         df = encode_sample(odyssey, fencode)
 
@@ -111,7 +117,6 @@ def test_aggregate_non_matching(odyssey):
     sample2 = {"col2": ["aaa", "bbb", "ccc"]}
 
     with NamedTemporaryFile() as fencode:
-
         odyssey.encode_odb(pandas.DataFrame(sample1), fencode)
         odyssey.encode_odb(pandas.DataFrame(sample2), fencode)
         fencode.flush()
@@ -151,7 +156,7 @@ def test_unqualified_names(odyssey):
         cols = ["col1@tbl1", "col3@tbl2", "col4"]
         df = odyssey.read_odb(fencode.name, single=True, columns=cols)
         expected_df = input_df[cols]
-        assert expected_df.equals(df)
+        assert_dataframe_equal(df, expected_df)
 
         # Check quick-access naming
 
@@ -166,7 +171,7 @@ def test_unqualified_names(odyssey):
                 "col4": sample["col4"],
             }
         )
-        assert expected_df.equals(df)
+        assert_dataframe_equal(df, expected_df)
 
         # What happens if we try and access an ambiguous columns?
 
@@ -179,7 +184,6 @@ def test_encode_decode_properties(odyssey):
     """Check that additional properties are encoded and decoded properly."""
 
     with NamedTemporaryFile() as fencode:
-
         # Test both by passing file handle and name to the encoding function.
         #   Please see ODB-523 for more information.
         for f in [fencode, fencode.name]:
