@@ -1,9 +1,9 @@
+import itertools
 import os
 
-import pytest
-import itertools
-from conftest import codc, odc_modules
 import numpy as np
+import pytest
+from conftest import codc, odc_modules
 
 
 def exception_map(module, exception):
