@@ -28,9 +28,7 @@ SAMPLE_PROPERTIES = {
     "property2": ".......and another .......",
 }
 
-SAMPLE_BITFIELDS = {
-    'col14': ['bf1', ('bfextended', 2), ('bf3', 1)]
-}
+SAMPLE_BITFIELDS = {"col14": ["bf1", ("bfextended", 2), ("bf3", 1)]}
 
 
 def assert_dataframe_equal(df1, df2):
@@ -227,7 +225,7 @@ def test_encode_decode_bitfields(odyssey):
         # Check that the frame contains the correct bitfield info
 
         for frame in reader.frames:
-            col14 = frame.column_dict['col14']
+            col14 = frame.column_dict["col14"]
             assert col14.dtype == odyssey.BITFIELD
             assert len(col14.bitfields) == 3
             assert col14.bitfields[0].name == "bf1"
@@ -243,24 +241,23 @@ def test_encode_decode_bitfields(odyssey):
         # Check that the decoded columns look right
 
         df = odyssey.read_odb(fencode.name, single=True)
-        data = df['col14']
+        data = df["col14"]
         expected = pandas.Series(EXPECTED_ALL)
         assert all(expected == data)
 
         # Check that we can decode specific bitfield colmuns
 
-        df = odyssey.read_odb(fencode.name, columns=['col14.bf3', 'col14.bfextended', 'col14.bf1'], single=True)
-        expected_df = pandas.DataFrame({'col14.bf1': EXPECTED1, 'col14.bfextended': EXPECTED2, 'col14.bf3': EXPECTED3})
+        df = odyssey.read_odb(fencode.name, columns=["col14.bf3", "col14.bfextended", "col14.bf1"], single=True)
+        expected_df = pandas.DataFrame({"col14.bf1": EXPECTED1, "col14.bfextended": EXPECTED2, "col14.bf3": EXPECTED3})
         assert_dataframe_equal(df, expected_df)
 
         # Check taht we can decode all the things at the same time...
 
-        df = odyssey.read_odb(fencode.name, columns=['col14.bf3', 'col14', 'col14.bf1'], single=True)
-        expected_df = pandas.DataFrame({'col14.bf1': EXPECTED1, 'col14': EXPECTED_ALL, 'col14.bf3': EXPECTED3})
+        df = odyssey.read_odb(fencode.name, columns=["col14.bf3", "col14", "col14.bf1"], single=True)
+        expected_df = pandas.DataFrame({"col14.bf1": EXPECTED1, "col14": EXPECTED_ALL, "col14.bf3": EXPECTED3})
         assert_dataframe_equal(df, expected_df)
 
         # Check that we get a sensible error if we request a bitfield that doesn't exist
 
         with pytest.raises(KeyError):
-            odyssey.read_odb(fencode.name, columns=['col14.badbf'], single=True)
-
+            odyssey.read_odb(fencode.name, columns=["col14.badbf"], single=True)

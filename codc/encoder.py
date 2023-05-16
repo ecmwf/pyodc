@@ -4,13 +4,9 @@ from .constants import DOUBLE, INTEGER, STRING
 from .lib import ffi, lib
 
 
-def encode_odb(df: pandas.DataFrame,
-               f,
-               types: dict = None,
-               rows_per_frame = 10000,
-               properties = None,
-               bitfields: dict = None,
-               **kwargs):
+def encode_odb(
+    df: pandas.DataFrame, f, types: dict = None, rows_per_frame=10000, properties=None, bitfields: dict = None, **kwargs
+):
     """
     Encode a pandas dataframe into ODB2 format
 

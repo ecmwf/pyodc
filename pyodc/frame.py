@@ -343,7 +343,6 @@ class Frame:
                 if name not in output:
                     raise KeyError(f"Requested columns '{name}' not found")
 
-
         lastDecoded = [0] * self._numberOfColumns
 
         lastStartCol = None

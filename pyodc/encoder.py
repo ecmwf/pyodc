@@ -88,9 +88,10 @@ def encode_single_dataframe(
 
     stream_class = BigEndianStream if bigendian else LittleEndianStream
 
-    codecs = [select_codec(name, data,
-                           (types or {}).get(name, None),
-                           (bitfields or {}).get(name, None)) for name, data in dataframe.items()]
+    codecs = [
+        select_codec(name, data, (types or {}).get(name, None), (bitfields or {}).get(name, None))
+        for name, data in dataframe.items()
+    ]
 
     # If a column order has been specified, sort the codecs according to it. otherwise sort
     # the codecs for the most efficient use of the given data

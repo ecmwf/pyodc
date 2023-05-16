@@ -167,8 +167,15 @@ class NumericBase(Codec):
         else:
             bitfield_names = []
             bitfield_sizes = []
-        c = cls(column_name, data.min(), data.max(), data_type, has_missing=data.hasnans,
-                bitfield_names=bitfield_names, bitfield_sizes=bitfield_sizes)
+        c = cls(
+            column_name,
+            data.min(),
+            data.max(),
+            data_type,
+            has_missing=data.hasnans,
+            bitfield_names=bitfield_names,
+            bitfield_sizes=bitfield_sizes,
+        )
         c._data = data
         return c
 
