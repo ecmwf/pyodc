@@ -363,7 +363,7 @@ class Frame:
 
         if len(self._trailingAggregatedFrames) > 0:
             return pd.concat(
-                [df] + [f.dataframe(columns) for f in self._trailingAggregatedFrames],
+                [df] + [f._dataframe_internal(columns) for f in self._trailingAggregatedFrames],
                 copy=False,
                 axis=0,
                 ignore_index=True,
