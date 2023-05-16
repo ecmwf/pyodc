@@ -202,3 +202,24 @@ def test_frame_extract_bits(odyssey):
 
             assert df_direct.shape[1] == 1
             assert all(df_direct[full_bitfield_name] == bitvals)
+
+@pytest.mark.parametrize("odyssey", odc_modules)
+def test_absent_column_keyerror(odyssey):
+
+    # Test with complete reading in one go
+
+    with pytest.raises(KeyError):
+        odyssey.read_odb(data_file1, columns=['missing-column'], single=True)
+    with pytest.raises(KeyError):
+        odyssey.read_odb(data_file1, columns=['datum_event1.nonono@body'], single=True)
+
+    # Test with iteration through frames
+
+    with pytest.raises(KeyError):
+        for _ in odyssey.read_odb(data_file1, columns=['missing-column']):
+            assert False, "Should never get here..."
+
+    with pytest.raises(KeyError):
+        for _ in odyssey.read_odb(data_file1, columns=['datum_event1.nonono@body']):
+            assert False, "Should never get here..."
+

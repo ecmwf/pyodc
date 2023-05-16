@@ -82,6 +82,9 @@ class ColumnInfo:
         def __str__(self):
             return f"bits(name={self.name}, size={self.size}, offset={self.offset})"
 
+        def __repr__(self):
+            return str(self)
+
     def __init__(self, name, idx, dtype, datasize, bitfields):
         self.name = name
         self.dtype = dtype
@@ -285,7 +288,10 @@ class Frame:
             for bitfield_name, column_name, output_name in bitfields:
                 assert df[column_name].dtype == np.int64
                 col = self.column_dict[column_name]
-                bf = next((b for b in col.bitfields if b.name == bitfield_name))
+                try:
+                    bf = next((b for b in col.bitfields if b.name == bitfield_name))
+                except StopIteration:
+                    raise KeyError(f"Bitfield '{bitfield_name}' not found")
                 mask = (1 << bf.size) - 1
                 new_column = np.right_shift(df[column_name], bf.offset) & mask
                 if bf.size == 1:
@@ -331,6 +337,12 @@ class Frame:
                         if name in output:
                             raise KeyError("Ambiguous short column name '{}' requested".format(name))
                         output[name] = output_col
+
+        if columns:
+            for name in columns:
+                if name not in output:
+                    raise KeyError(f"Requested columns '{name}' not found")
+
 
         lastDecoded = [0] * self._numberOfColumns
 

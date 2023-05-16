@@ -4,7 +4,13 @@ from .constants import DOUBLE, INTEGER, STRING
 from .lib import ffi, lib
 
 
-def encode_odb(df: pandas.DataFrame, f, types: dict = None, rows_per_frame=10000, properties=None, **kwargs):
+def encode_odb(df: pandas.DataFrame,
+               f,
+               types: dict = None,
+               rows_per_frame = 10000,
+               properties = None,
+               bitfields: dict = None,
+               **kwargs):
     """
     Encode a pandas dataframe into ODB2 format
 
@@ -14,6 +20,8 @@ def encode_odb(df: pandas.DataFrame, f, types: dict = None, rows_per_frame=10000
                   encode to an ODB2 data type to use to encode it.
     :param rows_per_frame: The maximum number of rows to encode per frame. If this number is exceeded,
                            a sequence of frames will be encoded
+    :param bitfields: A dictionary containing entries for BITFIELD columns. The values are either bitfield names, or
+                      tuple pairs of bitfield name and bitfield size
     :param kwargs: Accept extra arguments that may be used by the python pyodc encoder.
     :return:
     """
@@ -102,5 +110,11 @@ def encode_odb(df: pandas.DataFrame, f, types: dict = None, rows_per_frame=10000
             data.array.to_numpy().strides[0],
             ffi.cast("void*", data.values.ctypes.data),
         )
+
+        if bitfields and name in bitfields:
+            for bf in bitfields[name]:
+                nm = bf if isinstance(bf, str) else bf[0]
+                sz = 1 if isinstance(bf, str) else bf[1]
+                lib.odc_encoder_column_add_bitfield(encoder, i, nm.encode("utf-8"), sz)
 
     lib.odc_encode_to_file_descriptor(encoder, f.fileno(), ffi.NULL)

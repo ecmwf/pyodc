@@ -13,9 +13,10 @@ def encode_odb(
     dataframe: pd.DataFrame,
     target,
     rows_per_frame=10000,
-    types=None,
+    types: dict = None,
     bigendian: bool = False,
     properties: dict = None,
+    bitfields: dict = None,
 ):
     """
     Encode a pandas dataframe into an ODB-2 stream
@@ -23,9 +24,11 @@ def encode_odb(
     Parameters:
         dataframe(DataFrame): A pandas dataframe to encode
         target(str|file): A file-like object to write the encoded data to
-        columns(dict): A dictionary of (optional) column-name : constant :class:`.DataType` pairs, or ``None``
+        types(dict): A dictionary of (optional) column-name : constant :class:`.DataType` pairs, or ``None``
         bigendian(bool): Encode in big-endian byte order if ``True``
         properties(dict): Encode a dictionary of supplied properties
+        bitfields(dict): A dictionary containing entries for BITFIELD columns. The values are either bitfield names, or
+                         tuple pairs of bitfield name and bitfield size
     """
     if isinstance(target, str):
         with open(target, "wb") as real_target:
@@ -36,6 +39,7 @@ def encode_odb(
                 types=types,
                 bigendian=bigendian,
                 properties=properties,
+                bitfields=bitfields,
             )
 
     column_order = None
@@ -49,6 +53,7 @@ def encode_odb(
             column_order=column_order,
             bigendian=bigendian,
             properties=(properties or {}),
+            bitfields=bitfields,
         )
 
 
@@ -59,6 +64,7 @@ def encode_single_dataframe(
     column_order: list = None,
     bigendian: bool = False,
     properties: dict = None,
+    bitfields: dict = None,
 ):
     """
     Encode a single dataframe into an ODB-2 stream
@@ -66,11 +72,13 @@ def encode_single_dataframe(
     Parameters:
         dataframe(DataFrame): A pandas dataframe to encode
         target(str|file): A file-like object to write the encoded data to
-        columns(dict): A dictionary of (optional) column-name : constant :class:`.DataType` pairs, or ``None``
+        types(dict): A dictionary of (optional) column-name : constant :class:`.DataType` pairs, or ``None``
         column_order(list): A list of column names specifying the encode order. If ``None``, optimise according
                             to the rate of value changes in the columns
         bigendian(bool): Encode in big-endian byte order if ``True``
         properties(dict): Encode a dictionary of supplied properties
+        bitfields(dict): A dictionary containing entries for BITFIELD columns. The values are either bitfield names, or
+                         tuple pairs of bitfield name and bitfield size
 
     Returns:
         list: The column order used for encoding as a list of column names
@@ -80,7 +88,9 @@ def encode_single_dataframe(
 
     stream_class = BigEndianStream if bigendian else LittleEndianStream
 
-    codecs = [select_codec(name, data, (types or {}).get(name, None)) for name, data in dataframe.items()]
+    codecs = [select_codec(name, data,
+                           (types or {}).get(name, None),
+                           (bitfields or {}).get(name, None)) for name, data in dataframe.items()]
 
     # If a column order has been specified, sort the codecs according to it. otherwise sort
     # the codecs for the most efficient use of the given data
