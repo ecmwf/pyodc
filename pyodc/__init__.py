@@ -3,4 +3,4 @@ from .encoder import encode_odb
 from .frame import ColumnInfo, Frame
 from .reader import Reader, read_odb
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
