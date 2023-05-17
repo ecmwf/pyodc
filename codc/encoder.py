@@ -1,6 +1,6 @@
 import pandas
 
-from .constants import DOUBLE, INTEGER, STRING, BITFIELD
+from .constants import BITFIELD, DOUBLE, INTEGER, STRING
 from .lib import ffi, lib
 
 
