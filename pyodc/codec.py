@@ -59,7 +59,16 @@ class Codec:
     def encode_header(self, stream):
         stream.encodeString(self.column_name)
         stream.encodeInt32(self.type)
-        # TODO: Bitfield stuff goes here
+
+        if self.type == DataType.BITFIELD:
+            assert len(self.bitfield_sizes) == len(self.bitfield_names)
+            stream.encodeInt32(len(self.bitfield_names))
+            for nm in self.bitfield_names:
+                stream.encodeString(nm)
+            stream.encodeInt32(len(self.bitfield_sizes))
+            for sz in self.bitfield_sizes:
+                stream.encodeInt32(sz)
+
         stream.encodeString(self.name)
         stream.encodeInt32(1 if self.has_missing else 0)
         stream.encodeReal64(self.min)
@@ -75,7 +84,7 @@ class Codec:
         return has_missing, minval, maxval, missing_value
 
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
         raise NotImplementedError
 
     @classmethod
@@ -107,8 +116,9 @@ class Codec:
 
 class Constant(Codec):
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
         assert data.nunique() == 1 and not data.hasnans
+        assert not bitfields
         value = next(iter(data))
         return cls(column_name, value, value, data_type)
 
@@ -127,9 +137,10 @@ class Constant(Codec):
 
 class ConstantString(Constant):
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
         assert data.nunique() == 1 and not data.hasnans
         assert data_type == DataType.STRING
+        assert not bitfields
 
         # n.b. This looks like it ties it to little-endian, but it doesn't. Byte order
         #      is always the same for string data, but we are 'pretending' to be a double.
@@ -147,9 +158,24 @@ class NumericBase(Codec):
     accepted_types = None
 
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
         assert data_type in cls.accepted_types
-        c = cls(column_name, data.min(), data.max(), data_type, has_missing=data.hasnans)
+        if bitfields:
+            assert data_type == DataType.BITFIELD
+            bitfield_names = [bf if isinstance(bf, str) else bf[0] for bf in bitfields]
+            bitfield_sizes = [1 if isinstance(bf, str) else bf[1] for bf in bitfields]
+        else:
+            bitfield_names = []
+            bitfield_sizes = []
+        c = cls(
+            column_name,
+            data.min(),
+            data.max(),
+            data_type,
+            has_missing=data.hasnans,
+            bitfield_names=bitfield_names,
+            bitfield_sizes=bitfield_sizes,
+        )
         c._data = data
         return c
 
@@ -166,9 +192,9 @@ class ConstantOrMissing(NumericBase):
     accepted_types = (DataType.INTEGER, DataType.BITFIELD)
 
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
         assert data.nunique() == 1 and data.hasnans
-        return super().from_dataframe(column_name, data, data_type)
+        return super().from_dataframe(column_name, data, data_type, bitfields)
 
     def encode(self, stream, value):
         if pd.isnull(value):
@@ -261,10 +287,10 @@ class Int32(NumericBase):
     accepted_types = (DataType.INTEGER, DataType.BITFIELD)
 
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
         if data.min() < -0x80000000 or data.max() >= 0x7FFFFFFF:
             raise ValueError("Cannot encode integers out of range")
-        c = super().from_dataframe(column_name, data, data_type)
+        c = super().from_dataframe(column_name, data, data_type, bitfields)
         assert c.missing_value == c.internal_missing_value
         return c
 
@@ -323,9 +349,10 @@ class Int8String(Codec):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
         assert not data.hasnans
         assert data_type == DataType.STRING
+        assert not bitfields
         return cls(column_name, 0, 0, data_type, values=data.unique(), data=data)
 
     @classmethod
@@ -392,7 +419,7 @@ class Int16String(Int8String):
         return stream.readUInt16()
 
 
-def select_codec(column_name: str, data: pd.Series, data_type):
+def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
     # If data types are not specified, determine them from the pandas Series
 
     if data_type is None:
@@ -463,7 +490,7 @@ def select_codec(column_name: str, data: pd.Series, data_type):
             codec_class = Int16String
 
     if codec_class is not None:
-        return codec_class.from_dataframe(column_name, data, data_type)
+        return codec_class.from_dataframe(column_name, data, data_type, bitfields)
 
     print(data)
     print(data_type)

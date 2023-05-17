@@ -33,9 +33,6 @@ def test_initial_missing1(odyssey):
     data_file = os.path.join(os.path.dirname(__file__), "data/odb_533_1.odb")
     df = odyssey.read_odb(data_file, single=True)
 
-    print(check_df)
-    print(df)
-
     assert set(check_df.columns) == set(df.columns)
     for col in df.columns:
         numpy.testing.assert_array_equal(df[col], check_df[col])
@@ -55,9 +52,6 @@ def test_initial_missing2(odyssey):
 
     data_file = os.path.join(os.path.dirname(__file__), "data/odb_533_2.odb")
     df = odyssey.read_odb(data_file, single=True)
-
-    print(check_df)
-    print(df)
 
     assert set(check_df.columns) == set(df.columns)
     for col in df.columns:

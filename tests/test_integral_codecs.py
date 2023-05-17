@@ -24,7 +24,7 @@ def test_int8_range_encoding():
 
     for offset in (0, -100):
         s = pd.Series((1 + offset, 2**8 + offset))
-        c = select_codec("column", s, None)
+        c = select_codec("column", s, None, None)
 
         assert type(c) == codec.Int8
         assert c.min == 1 + offset
@@ -41,7 +41,7 @@ def test_int16_range_encoding_minimal():
 
     for offset in (0, -10000):
         s = pd.Series((1 + offset, 2**8 + offset + 1))
-        c = select_codec("column", s, None)
+        c = select_codec("column", s, None, None)
 
         assert type(c) == codec.Int16
         assert c.min == 1 + offset
@@ -54,7 +54,7 @@ def test_int16_range_encoding_maximal():
 
     for offset in (0, -10000):
         s = pd.Series((1 + offset, 2**8 + offset, 2**16 + offset))
-        c = select_codec("column", s, None)
+        c = select_codec("column", s, None, None)
 
         assert type(c) == codec.Int16
         assert c.min == 1 + offset
@@ -71,7 +71,7 @@ def test_int32_range_encoding():
     --> Can include missing values
     """
     s = pd.Series((-(2**31), None, 2**31 - 2))
-    c = select_codec("column", s, None)
+    c = select_codec("column", s, None, None)
 
     assert isinstance(c, codec.Int32)
     assert c.min == -(2**31)
@@ -82,7 +82,7 @@ def test_int32_range_encoding():
 def test_wider_range_unsupported():
     s = pd.Series((-(2**31), 2**31 - 1))
     with pytest.raises(NotImplementedError):
-        select_codec("column", s, None)
+        select_codec("column", s, None, None)
 
 
 def test_int8_missing_range_encoding():
@@ -90,7 +90,7 @@ def test_int8_missing_range_encoding():
 
     for offset in (0, -100):
         s = pd.Series((1 + offset, None, 2**8 + offset - 1))
-        c = select_codec("column", s, None)
+        c = select_codec("column", s, None, None)
 
         assert type(c) == codec.Int8Missing
         assert c.min == 1 + offset
@@ -103,7 +103,7 @@ def test_int16_missing_range_encoding_minimal():
 
     for offset in (0, -100):
         s = pd.Series((1 + offset, None, 2**8 + offset))
-        c = select_codec("column", s, None)
+        c = select_codec("column", s, None, None)
 
         assert type(c) == codec.Int16Missing
         assert c.min == 1 + offset
@@ -116,7 +116,7 @@ def test_int16_missing_range_encoding_maximal():
 
     for offset in (0, -100):
         s = pd.Series((1 + offset, None, 2**16 + offset - 1))
-        c = select_codec("column", s, None)
+        c = select_codec("column", s, None, None)
 
         assert type(c) == codec.Int16Missing
         assert c.min == 1 + offset

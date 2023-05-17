@@ -82,6 +82,9 @@ class ColumnInfo:
         def __str__(self):
             return f"bits(name={self.name}, size={self.size}, offset={self.offset})"
 
+        def __repr__(self):
+            return str(self)
+
     def __init__(self, name, idx, dtype, datasize, bitfields):
         self.name = name
         self.dtype = dtype
@@ -283,13 +286,28 @@ class Frame:
         if bitfields:
             extracted_columns = set()
             for bitfield_name, column_name, output_name in bitfields:
-                assert df[column_name].dtype == np.int64
                 col = self.column_dict[column_name]
-                bf = next((b for b in col.bitfields if b.name == bitfield_name))
+                try:
+                    bf = next((b for b in col.bitfields if b.name == bitfield_name))
+                except StopIteration:
+                    raise KeyError(f"Bitfield '{bitfield_name}' not found")
+
+                # If there are missing values in the column, then it will have been decoded as a float64 to support NaN
+                raw_column = df[column_name]
+                missing_vals = None
+                if raw_column.dtype == np.float64:
+                    missing_vals = np.isnan(raw_column)
+                    raw_column = raw_column.fillna(value=0).astype("int64")
+
                 mask = (1 << bf.size) - 1
-                new_column = np.right_shift(df[column_name], bf.offset) & mask
+                new_column = np.right_shift(raw_column, bf.offset) & mask
                 if bf.size == 1:
                     new_column = new_column.astype(bool)
+
+                # If we have missing values, we need to recreate these
+                if missing_vals is not None:
+                    new_column[missing_vals] = np.nan
+
                 df[output_name] = new_column
                 extracted_columns.add(column_name)
 
@@ -332,6 +350,11 @@ class Frame:
                             raise KeyError("Ambiguous short column name '{}' requested".format(name))
                         output[name] = output_col
 
+        if columns:
+            for name in columns:
+                if name not in output:
+                    raise KeyError(f"Requested columns '{name}' not found")
+
         lastDecoded = [0] * self._numberOfColumns
 
         lastStartCol = None
@@ -363,7 +386,7 @@ class Frame:
 
         if len(self._trailingAggregatedFrames) > 0:
             return pd.concat(
-                [df] + [f.dataframe(columns) for f in self._trailingAggregatedFrames],
+                [df] + [f._dataframe_internal(columns) for f in self._trailingAggregatedFrames],
                 copy=False,
                 axis=0,
                 ignore_index=True,
