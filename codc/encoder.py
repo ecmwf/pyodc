@@ -1,6 +1,6 @@
 import pandas
 
-from .constants import DOUBLE, INTEGER, STRING
+from .constants import DOUBLE, INTEGER, STRING, BITFIELD
 from .lib import ffi, lib
 
 
@@ -47,28 +47,36 @@ def encode_odb(
         return_arr = arr
         dtype = override_type
 
+        # Infer the column type from the data, if no column type given
+
         if dtype is None:
             if arr.dtype in ("uint64", "int64"):
                 dtype = INTEGER
             elif arr.dtype == "float64":
                 if not data.isnull().all() and all(pandas.isnull(v) or float(v).is_integer() for v in arr):
                     dtype = INTEGER
-                    return_arr = arr.fillna(value=missing_integer).astype("int64")
                 else:
                     dtype = DOUBLE
-                    return_arr = arr.fillna(value=missing_double)
             elif arr.dtype == "object":
                 if not arr.isnull().all() and all(s is None or isinstance(s, str) for s in arr):
                     dtype = STRING
                 elif arr.isnull().all():
                     dtype = INTEGER
 
+        # With an inferred, or supplied column type, massage the data into a form that can be encoded
+
         if arr.dtype == "object":
             # Map strings into an array that can be read in C
             if dtype == STRING:
                 return_arr = return_arr.astype("|S{}".format(max(8, 8 * (1 + ((max(len(s) for s in arr) - 1) // 8)))))
-            elif dtype == INTEGER:
+            elif dtype == INTEGER or dtype == BITFIELD:
                 return_arr = return_arr.fillna(value=missing_integer).astype("int64")
+
+        elif arr.dtype == "float64":
+            if dtype == INTEGER or dtype == BITFIELD:
+                return_arr = arr.fillna(value=missing_integer).astype("int64")
+            else:
+                return_arr = arr.fillna(value=missing_double)
 
         if dtype is None:
             raise ValueError("Unsupported value type: {}".format(arr.dtype))
