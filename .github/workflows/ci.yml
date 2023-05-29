@@ -1,23 +1,25 @@
 name: ci
 
-# Controls when the workflow will run
 on:
-
-  # Trigger the workflow on all pushes
+  # Trigger the workflow on push to master or develop, except tag creation
   push:
     branches:
-    - '**'
-    tags:
-    - '**'
+      - 'master'
+      - 'develop'
+    tags-ignore:
+      - '**'
 
-  # Trigger the workflow on all pull requests
+  # Trigger the workflow on pull request
   pull_request: ~
 
-  # Allow workflow to be dispatched on demand
+  # Trigger the workflow manually
   workflow_dispatch: ~
 
-jobs:
+  # Trigger after public PR approved for CI
+  pull_request_target:
+    types: [labeled]
 
+jobs:
   # Calls a reusable CI workflow to qa, test & deploy the current repository.
   #   It will pull in all needed dependencies and produce a code coverage report on success.
   #   If all checks were successful and a new release tag pushed, the package will be published on PyPI.
@@ -39,3 +41,21 @@ jobs:
       pypi_username: ${{ secrets.PYPI_USERNAME }}
       pypi_password: ${{ secrets.PYPI_PASSWORD }}
       incoming_webhook: ${{ secrets.MS_TEAMS_INCOMING_WEBHOOK }}
+
+  # Run CI including downstream packages on self-hosted runners
+  downstream-ci:
+    name: downstream-ci
+    if: ${{ !github.event.pull_request.head.repo.fork && github.event.action != 'labeled' || github.event.label.name == 'approved-for-ci' }}
+    uses: ecmwf-actions/downstream-ci/.github/workflows/downstream-ci.yml@main
+    with:
+      pyodc: ecmwf/pyodc@${{ github.event.pull_request.head.sha || github.sha }}
+    secrets: inherit
+
+  # Build downstream packages on HPC
+  downstream-ci-hpc:
+    name: downstream-ci-hpc
+    if: ${{ !github.event.pull_request.head.repo.fork && github.event.action != 'labeled' || github.event.label.name == 'approved-for-ci' }}
+    uses: ecmwf-actions/downstream-ci/.github/workflows/downstream-ci-hpc.yml@main
+    with:
+      pyodc: ecmwf/pyodc@${{ github.event.pull_request.head.sha || github.sha }}
+    secrets: inherit
