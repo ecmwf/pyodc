@@ -16,6 +16,7 @@
 import os
 
 import cffi
+import findlibs
 from pkg_resources import parse_version
 
 __odc_version__ = "1.4.0"
@@ -44,24 +45,11 @@ class PatchedLib:
     def __init__(self):
         ffi.cdef(self.__read_header())
 
-        libnames = [
-            "odccore",
-        ]
-        for env_var in ("ODC_DIR", "odc_DIR"):
-            if os.environ.get(env_var):
-                libnames.insert(0, os.path.join(os.environ[env_var], "lib/libodccore"))
-                libnames.insert(0, os.path.join(os.environ[env_var], "lib64/libodccore"))
-                libnames.insert(0, os.path.join(os.environ[env_var], "lib/libodccore.so"))
-                libnames.insert(0, os.path.join(os.environ[env_var], "lib64/libodccore.so"))
+        library_path = findlibs.find("odccore", pkg_name="odc")
+        if library_path is None:
+            raise RuntimeError("Cannot find the odccore library")
 
-        for libname in libnames:
-            try:
-                self.__lib = ffi.dlopen(libname)
-                break
-            except Exception as e:
-                last_exception = e
-        else:
-            raise CFFIModuleLoadFailed() from last_exception
+        self.__lib = ffi.dlopen(library_path)
 
         # Todo: Version check against __version__
 
