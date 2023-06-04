@@ -26,6 +26,7 @@ jobs:
   #   In case the job fails, a message will be posted to a Microsoft Teams channel.
   ci:
     name: ci
+    if: ${{ !github.event.pull_request.head.repo.fork && github.event.action != 'labeled' || github.event.label.name == 'approved-for-ci' }}
     uses: ecmwf-actions/reusable-workflows/.github/workflows/ci-python.yml@v1
     with:
       codecov_upload: true
