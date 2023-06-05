@@ -1,0 +1,9 @@
+build:
+  python: '3.10'
+  modules:
+    - ninja
+  dependencies:
+    - ecmwf/ecbuild@develop
+    - ecmwf/eckit@develop
+    - ecmwf/odc@develop
+  parallel: 64

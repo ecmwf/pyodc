@@ -1,0 +1,7 @@
+dependencies: |
+  ecmwf/ecbuild
+  ecmwf/eckit
+  ecmwf/odc
+dependency_branch: develop
+parallelism_factor: 8
+self_build: false
