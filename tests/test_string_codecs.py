@@ -3,6 +3,7 @@ import struct
 import pandas as pd
 import numpy
 from tempfile import NamedTemporaryFile
+import io
 
 import pytest
 from conftest import odc_modules
@@ -47,6 +48,17 @@ def test_normal_constant_string():
     encoded = b""
 
     _check_decode(cdc, encoded, "helloAAA")
+
+def test_long_strings():
+    long_string = "123456789"
+    series = pd.Series([long_string] * 10)
+    cdc = codec.select_codec("column", series, DataType.STRING, False)
+
+    f = io.BytesIO()
+    st = LittleEndianStream(f)
+
+    cdc.encode(st, long_string)
+    assert cdc.decode(st) == long_string
 
 
 @pytest.mark.parametrize("odyssey", odc_modules)
