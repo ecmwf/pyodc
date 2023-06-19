@@ -49,16 +49,43 @@ def test_normal_constant_string():
 
     _check_decode(cdc, encoded, "helloAAA")
 
-def test_long_strings():
-    long_string = "123456789"
-    series = pd.Series([long_string] * 10)
-    cdc = codec.select_codec("column", series, DataType.STRING, False)
+def test_string_codec_selection():
+    # Deliberately using strings on length 7,8,9 to catch edges cases
+    testcases = [
+        [["constan", "constan"], codec.ConstantString],
+        [["constant", "constant"], codec.ConstantString],
+        [["longconst", "longconst"], codec.LongConstantString],
+        [["longconstant", "longconstant"], codec.LongConstantString],
+        [["not", "constant", "longnotconstant"], codec.Int8String],
+        [["longconstant"] + [str(num) for num in range(256)], codec.Int16String]
+    ]
 
-    f = io.BytesIO()
-    st = LittleEndianStream(f)
 
-    cdc.encode(st, long_string)
-    assert cdc.decode(st) == long_string
+    for testdata, expected_codec in testcases:
+        # Check that the correct codec is being selected
+        series = pd.Series(testdata)
+        selected_codec = codec.select_codec("column", series, DataType.STRING, False)
+        assert isinstance(selected_codec, expected_codec)
+        
+        # Create a temporary stream
+        f = io.BytesIO()
+        st = LittleEndianStream(f)
+        
+        # Encode the header and data for just this column        
+        selected_codec.encode_header(st)
+        for val in testdata: selected_codec.encode(st, val)
+        st.seek(0) # reset the stream to the start
+        
+        # Check the header can be decoded correctly
+        decoded_codec = codec.read_codec(st)
+        assert decoded_codec.column_name == "column"
+        assert decoded_codec.type == DataType.STRING
+        assert decoded_codec.name == selected_codec.name
+        
+        # Check the encoded data matches        
+        for val in testdata:
+            decoded_val = selected_codec.decode(st)
+            assert val == decoded_val
 
 
 @pytest.mark.parametrize("odyssey", odc_modules)

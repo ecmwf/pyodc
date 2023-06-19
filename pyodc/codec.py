@@ -167,6 +167,66 @@ class ConstantString(Constant):
     def decode(self, stream):
         return struct.pack("<d", self.min).split(b"\x00", 1)[0].decode("utf-8")
 
+class LongConstantString(Constant):
+    "This deals with constant string columns where the value is longer than 64 bits"
+    def __init__(
+        self,
+        column_name: str,
+        constant_string: str,
+    ):
+        self.column_name = column_name
+        self.has_missing = False
+        self.constant_string = constant_string
+        self._data_size = len(constant_string.encode("utf-8"))
+
+        self.type = DataType.STRING
+        self.missing_value = MISSING_STRING
+        self.typed_missing_value = ""
+
+        assert self.name is not None
+        assert self._data_size > 8 
+
+
+    @classmethod
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
+        assert data.nunique() == 1 and not data.hasnans
+        assert data_type == DataType.STRING
+        assert not bitfields
+        return cls(column_name, constant_string = next(iter(data)))
+
+    @property
+    def data_size(self):
+        return self._data_size
+
+    @property
+    def numChanges(self):
+        return 0
+
+    def encode_header(self, stream):
+        """
+        Encode the column header including both the 
+        universal (name, dtype, codec) part and the
+        addtional codec specific data.
+        """
+        stream.encodeString(self.column_name) # Column name
+        stream.encodeInt32(self.type) # Data type
+        stream.encodeString(self.name) # Codec Name
+
+        # Codec specific data is just Int32 length followed by utf-8 encoded bytes
+        stream.encodeString(self.constant_string) 
+
+
+    @staticmethod
+    def read_core_header(stream):
+        "Read just the codec specific data"
+        return stream.readString()
+    
+    @classmethod
+    def from_stream(cls, stream, column_name: str, data_type: DataType, bitfield_names, bitfield_sizes):
+        return cls(column_name, constant_string = cls.read_core_header(stream))
+    
+    def decode(self, stream):
+        return self.constant_string
 
 class NumericBase(Codec):
     _numChanges = None
@@ -434,7 +494,6 @@ class Int16String(Int8String):
     def _decode(stream):
         return stream.readUInt16()
 
-
 def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
     # If data types are not specified, determine them from the pandas Series
 
@@ -497,8 +556,8 @@ def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
             codec_class = ShortReal2
 
     elif data_type == DataType.STRING:
-        if data.nunique() == 1 and len(data.iloc[0]) <= 8 and not data.hasnans:
-            codec_class = ConstantString
+        if data.nunique() == 1 and not data.hasnans:
+            codec_class = ConstantString if len(data.iloc[0]) <= 8 else LongConstantString
         elif data.nunique() <= 256:
             codec_class = Int8String
         else:
