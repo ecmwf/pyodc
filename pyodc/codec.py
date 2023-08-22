@@ -116,7 +116,7 @@ class Codec:
 
 class Constant(Codec):
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields : list[str | tuple]):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields : list):
         assert data.nunique() == 1 and not data.hasnans
         value = next(iter(data))
         
