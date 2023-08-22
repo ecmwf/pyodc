@@ -116,11 +116,27 @@ class Codec:
 
 class Constant(Codec):
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields : list[str | tuple]):
         assert data.nunique() == 1 and not data.hasnans
-        assert not bitfields
         value = next(iter(data))
-        return cls(column_name, value, value, data_type)
+        
+        if bitfields:
+            assert data_type == DataType.BITFIELD
+            bitfield_names = [bf if isinstance(bf, str) else bf[0] for bf in bitfields]
+            bitfield_sizes = [1 if isinstance(bf, str) else bf[1] for bf in bitfields]
+        else:
+            bitfield_names = []
+            bitfield_sizes = []
+
+        return cls(
+            column_name,
+            minval = value,
+            maxval = value,
+            data_type = data_type,
+            has_missing = False,
+            bitfield_names=bitfield_names,
+            bitfield_sizes=bitfield_sizes,
+        )
 
     def encode(self, stream, value):
         pass
