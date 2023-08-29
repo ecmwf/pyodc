@@ -26,7 +26,7 @@ def test_int8_range_encoding():
         s = pd.Series((1 + offset, 2**8 + offset))
         c = select_codec("column", s, None, None)
 
-        assert type(c) == codec.Int8
+        assert isinstance(c, codec.Int8)
         assert c.min == 1 + offset
 
     _check_encode(c, s, b"\x00\xff")
@@ -43,7 +43,7 @@ def test_int16_range_encoding_minimal():
         s = pd.Series((1 + offset, 2**8 + offset + 1))
         c = select_codec("column", s, None, None)
 
-        assert type(c) == codec.Int16
+        assert isinstance(c, codec.Int16)
         assert c.min == 1 + offset
 
         _check_encode(c, s, b"\x00\x00\x00\x01")
@@ -56,7 +56,7 @@ def test_int16_range_encoding_maximal():
         s = pd.Series((1 + offset, 2**8 + offset, 2**16 + offset))
         c = select_codec("column", s, None, None)
 
-        assert type(c) == codec.Int16
+        assert isinstance(c, codec.Int16)
         assert c.min == 1 + offset
 
         _check_encode(c, s, b"\x00\x00\xff\x00\xff\xff")
@@ -92,7 +92,7 @@ def test_int8_missing_range_encoding():
         s = pd.Series((1 + offset, None, 2**8 + offset - 1))
         c = select_codec("column", s, None, None)
 
-        assert type(c) == codec.Int8Missing
+        assert isinstance(c, codec.Int8Missing)
         assert c.min == 1 + offset
 
     _check_encode(c, s, b"\x00\xff\xfe")
@@ -105,7 +105,7 @@ def test_int16_missing_range_encoding_minimal():
         s = pd.Series((1 + offset, None, 2**8 + offset))
         c = select_codec("column", s, None, None)
 
-        assert type(c) == codec.Int16Missing
+        assert isinstance(c, codec.Int16Missing)
         assert c.min == 1 + offset
 
     _check_encode(c, s, b"\x00\x00\xff\xff\xff\x00")
@@ -118,7 +118,7 @@ def test_int16_missing_range_encoding_maximal():
         s = pd.Series((1 + offset, None, 2**16 + offset - 1))
         c = select_codec("column", s, None, None)
 
-        assert type(c) == codec.Int16Missing
+        assert isinstance(c, codec.Int16Missing)
         assert c.min == 1 + offset
 
     _check_encode(c, s, b"\x00\x00\xff\xff\xfe\xff")

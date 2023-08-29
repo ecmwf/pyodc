@@ -20,8 +20,8 @@ SAMPLE_DATA = {
     "col12": [-512, None, 3, 7623, -22000, None, 7],
     "col13": [-1234567, 8765432, None, 22, 22222222, -81222323, None],
     "col14": [0b0000, 0b1001, 0b0110, 0b0101, 0b1010, 0b1111, 0b0000],
-    "col15": [0b0000, 0b1001, None, 0b0101, 0b1010, 0b1111, 0b0000]
-    # 'col21': [None] * 7
+    "col15": [0b0000, 0b1001, None, 0b0101, 0b1010, 0b1111, 0b0000],
+    "constant_bitfield": [0b1100] * 7,
 }
 
 SAMPLE_PROPERTIES = {
@@ -29,7 +29,11 @@ SAMPLE_PROPERTIES = {
     "property2": ".......and another .......",
 }
 
-SAMPLE_BITFIELDS = {"col14": ["bf1", ("bfextended", 2), ("bf3", 1)], "col15": ["bf1", ("bfextended", 2), ("bf3", 1)]}
+SAMPLE_BITFIELDS = {
+    "col14": ["bf1", ("bfextended", 2), ("bf3", 1)],
+    "col15": ["bf1", ("bfextended", 2), ("bf3", 1)],
+    "constant_bitfield": ["bf1", ("bfextended", 2), ("bf3", 1)],
+}
 
 
 def assert_dataframe_equal(df1, df2):
@@ -50,6 +54,7 @@ def encode_sample(odyssey, f):
         "col10": odyssey.REAL,
         "col14": odyssey.BITFIELD,
         "col15": odyssey.BITFIELD,
+        "constant_bitfield": odyssey.BITFIELD,
         # 'col21': odyssey.REAL
     }
 
@@ -270,7 +275,7 @@ def test_encode_decode_bitfields(odyssey):
         )
         assert_dataframe_equal(df, expected_df)
 
-        # Check taht we can decode all the things at the same time...
+        # Check that we can decode all the things at the same time...
 
         df = odyssey.read_odb(fencode.name, columns=["col14.bf3", "col14", "col14.bf1"], single=True)
         expected_df = pandas.DataFrame({"col14.bf1": EXPECTED1, "col14": EXPECTED_ALL, "col14.bf3": EXPECTED3})
@@ -284,3 +289,20 @@ def test_encode_decode_bitfields(odyssey):
 
         with pytest.raises(KeyError):
             odyssey.read_odb(fencode.name, columns=["col14.badbf"], single=True)
+
+
+@pytest.mark.parametrize("encode_odc, decode_odc", [(e, d) for e in odc_modules for d in odc_modules])
+def test_cross_library_encode_decode(encode_odc, decode_odc):
+    "Check that all the four (encoder, decoder) pairs work across pyodc and codc, (if codc is present)."
+    SAMPLE_TYPES = {
+        "col14": encode_odc.BITFIELD,
+        "col15": encode_odc.BITFIELD,
+        "constant_bitfield": encode_odc.BITFIELD,
+    }
+
+    with NamedTemporaryFile() as f:
+        df1 = pandas.DataFrame(SAMPLE_DATA)
+        encode_odc.encode_odb(df1, f, types=SAMPLE_TYPES, bitfields=SAMPLE_BITFIELDS)
+        f.flush()
+        df2 = decode_odc.read_odb(f.name, single=True)
+        assert_dataframe_equal(df1, df2)
