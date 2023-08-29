@@ -21,7 +21,7 @@ SAMPLE_DATA = {
     "col13": [-1234567, 8765432, None, 22, 22222222, -81222323, None],
     "col14": [0b0000, 0b1001, 0b0110, 0b0101, 0b1010, 0b1111, 0b0000],
     "col15": [0b0000, 0b1001, None, 0b0101, 0b1010, 0b1111, 0b0000],
-    "constant_bitfield":  [0b1100] * 7,
+    "constant_bitfield": [0b1100] * 7,
 }
 
 SAMPLE_PROPERTIES = {
@@ -29,10 +29,11 @@ SAMPLE_PROPERTIES = {
     "property2": ".......and another .......",
 }
 
-SAMPLE_BITFIELDS = { "col14": ["bf1", ("bfextended", 2), ("bf3", 1)],
-                     "col15": ["bf1", ("bfextended", 2), ("bf3", 1)],
-                     "constant_bitfield": ["bf1", ("bfextended", 2), ("bf3", 1)],
-                     }
+SAMPLE_BITFIELDS = {
+    "col14": ["bf1", ("bfextended", 2), ("bf3", 1)],
+    "col15": ["bf1", ("bfextended", 2), ("bf3", 1)],
+    "constant_bitfield": ["bf1", ("bfextended", 2), ("bf3", 1)],
+}
 
 
 def assert_dataframe_equal(df1, df2):
@@ -290,14 +291,14 @@ def test_encode_decode_bitfields(odyssey):
             odyssey.read_odb(fencode.name, columns=["col14.badbf"], single=True)
 
 
-@pytest.mark.parametrize("encode_odc, decode_odc", [(e,d) for e in odc_modules for d in odc_modules])
+@pytest.mark.parametrize("encode_odc, decode_odc", [(e, d) for e in odc_modules for d in odc_modules])
 def test_cross_library_encode_decode(encode_odc, decode_odc):
     "Check that all the four (encoder, decoder) pairs work across pyodc and codc, (if codc is present)."
     SAMPLE_TYPES = {
-            "col14": encode_odc.BITFIELD,
-            "col15": encode_odc.BITFIELD,
-            "constant_bitfield": encode_odc.BITFIELD,
-        }
+        "col14": encode_odc.BITFIELD,
+        "col15": encode_odc.BITFIELD,
+        "constant_bitfield": encode_odc.BITFIELD,
+    }
 
     with NamedTemporaryFile() as f:
         df1 = pandas.DataFrame(SAMPLE_DATA)
