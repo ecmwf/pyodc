@@ -45,7 +45,7 @@ class Stream:
         self.write(value.to_bytes(8, byteorder=self.byteOrder, signed=True))
 
     def encodeString(self, value: str):
-        self.encodeByteString(value.encode("utf-8"))
+        self.encodeByteString(str(value).encode("utf-8"))
 
     def encodeByteString(self, value: bytes):
         self.encodeInt32(len(value))

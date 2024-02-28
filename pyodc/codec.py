@@ -432,7 +432,7 @@ def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
                 data_type = DataType.DOUBLE
         elif data.dtype == "float32":
             data_type = DataType.REAL
-        elif data.dtype == "object":
+        elif data.dtype == "object" or pd.api.types.is_string_dtype(data):
             if not data.isnull().all() and all(s is None or isinstance(s, str) for s in data):
                 data_type = DataType.STRING
 

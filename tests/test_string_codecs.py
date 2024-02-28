@@ -1,5 +1,8 @@
 import os
 import struct
+import pandas as pd
+import numpy
+from tempfile import NamedTemporaryFile
 
 import pytest
 from conftest import odc_modules
@@ -67,3 +70,31 @@ def test_decode_odb1_missing_strings(odyssey):
     for v in series:
         assert isinstance(v, str)
         assert v == ""
+
+
+# Each case is a single column and the expected codec 
+testcases = [
+    [["abcd"] * 7, codec.ConstantString],
+    [["abcdefghi"] * 7, codec.Int8String],
+    [["aoeu", "aoeu", "aaaaaaaooooooo", "None", "boo", "squiggle", "a"], codec.Int8String],
+    [["longconstant"] + [str(num) for num in range(256)], codec.Int16String],
+]
+
+@pytest.mark.parametrize("encoder", odc_modules)
+@pytest.mark.parametrize("decoder", odc_modules)
+@pytest.mark.parametrize("testcase", testcases)
+@pytest.mark.parametrize("type", ["string", "object"])
+def test_new_strings(encoder, decoder, testcase, type):
+    """
+    Tests that the new dedicated pandas string type "string" and
+    the older way of storing strings as objects both work
+    """
+    testcase, codec = testcase
+    df = pd.DataFrame(testcase, dtype = type)
+
+    with NamedTemporaryFile() as fencode:
+        encoder.encode_odb(df, fencode.name)
+        round_tripped_data = decoder.read_odb(fencode.name, single = True)
+
+    # Check the data round tripped
+    numpy.testing.assert_array_equal(df.iloc[0].values, round_tripped_data.iloc[0].values)
