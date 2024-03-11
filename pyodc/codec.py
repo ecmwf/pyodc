@@ -57,7 +57,7 @@ class Codec:
         return 8
 
     def encode_header(self, stream):
-        stream.encodeString(self.column_name)
+        stream.encodeString(str(self.column_name))
         stream.encodeInt32(self.type)
 
         if self.type == DataType.BITFIELD:
