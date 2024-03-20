@@ -497,7 +497,7 @@ def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
             codec_class = ShortReal2
 
     elif data_type == DataType.STRING:
-        if data.nunique() == 1 and not data.hasnans:
+        if data.nunique() == 1 and len(data.iloc[0]) <= 8 and not data.hasnans:
             codec_class = ConstantString
         elif data.nunique() <= 256:
             codec_class = Int8String
