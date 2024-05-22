@@ -349,15 +349,24 @@ class Frame:
         # names, but we also allow selection of short names of the form <name>@<table> (so
         # long as these names are not ambiguous
         output = {}
+        full_matches = set()
         for codec, output_col in zip(column_codecs, output_cols):
+            print(f"CURRENT: {output}")
+            print(f"OUTCOL: {output_col}")
             if columns is None or codec.column_name in columns:
                 output[codec.column_name] = output_col
+                full_matches.add(codec.column_name)
             else:
                 splitname = codec.column_name.split("@")
+                print(f"Matching. {splitname}")
                 if len(splitname) == 2:
                     name, table = splitname
                     if name in columns:
                         if name in output:
+                            # If we have already matched "foo" against "foo", then "foo" matching "foo@bar" is
+                            # a weaker match, not an ambiguity
+                            if name in full_matches:
+                                continue
                             raise KeyError("Ambiguous short column name '{}' requested".format(name))
                         output[name] = output_col
 
