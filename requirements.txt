@@ -1,4 +1,5 @@
 cffi
+findlibs
 pandas
 pytest
 pytest-cov
