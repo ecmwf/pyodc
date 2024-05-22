@@ -1,4 +1,4 @@
-from .constants import BITFIELD, DOUBLE, INTEGER, REAL, STRING, DataType
+from .constants import BITFIELD, DOUBLE, INTEGER, REAL, STRING, DataType, type_name
 from .lib import ffi, lib, memoize_constant
 
 try:
@@ -64,7 +64,7 @@ class ColumnInfo:
             bitfield_str = "(" + ",".join("{}:{}".format(b.name, b.size) for b in self.bitfields) + ")"
         else:
             bitfield_str = ""
-        return "{}:{}{}".format(self.name, self.dtype, bitfield_str)
+        return "{}:{}{}".format(self.name, type_name(self.dtype), bitfield_str)
 
     def __repr__(self):
         return str(self)
@@ -177,18 +177,28 @@ class Frame:
 
         if columns is not None:
             final_columns = set()
+            _original_columns = self.column_dict.keys()
+            _original_simple_columns = self.simple_column_dict.keys()
+
             for colname in columns:
-                dotpos = colname.find(".")
-                if dotpos == -1:
+
+                # If the column is already present, then use that one directly.
+                # This ensures that we can handle exploded bitfield columns, and extract bitfields from
+                # existing columns below
+                if colname in _original_columns or colname in _original_simple_columns:
                     final_columns.add(colname)
                 else:
-                    column_name = colname[:dotpos]
-                    sp = colname[dotpos + 1 :].split("@")
-                    bitfield_name = sp[0]
-                    if len(sp) > 1:
-                        column_name += "@" + sp[1]
-                    final_columns.add(column_name)
-                    bitfields.append((bitfield_name, column_name, colname))
+                    dotpos = colname.find(".")
+                    if dotpos == -1:
+                        final_columns.add(colname)
+                    else:
+                        column_name = colname[:dotpos]
+                        sp = colname[dotpos + 1 :].split("@")
+                        bitfield_name = sp[0]
+                        if len(sp) > 1:
+                            column_name += "@" + sp[1]
+                        final_columns.add(column_name)
+                        bitfields.append((bitfield_name, column_name, colname))
             columns = list(final_columns)
 
         df = self._dataframe_internal(columns)

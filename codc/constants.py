@@ -1,6 +1,6 @@
 from enum import IntEnum, unique
 
-from .lib import lib
+from .lib import ffi, lib, ODCException
 
 
 @unique
@@ -19,3 +19,19 @@ REAL = DataType.REAL
 STRING = DataType.STRING
 BITFIELD = DataType.BITFIELD
 DOUBLE = DataType.DOUBLE
+
+
+_type_names = {}
+
+def type_name(typ):
+    try:
+        return _type_names[typ]
+    except KeyError:
+        try:
+            pname = ffi.new("const char**")
+            lib.odc_column_type_name(typ, pname)
+            name = ffi.string(pname[0]).decode("utf-8")
+        except ODCException:
+            name = "<unknown>"
+        _type_names[typ] = name
+        return name
