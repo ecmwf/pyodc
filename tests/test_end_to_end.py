@@ -291,6 +291,101 @@ def test_encode_decode_bitfields(odyssey):
             odyssey.read_odb(fencode.name, columns=["col14.badbf"], single=True)
 
 
+@pytest.mark.parametrize("odyssey", odc_modules)
+def test_encode_decode_bitfield_like(odyssey):
+
+    sample = {
+        "col1.bf1": [1, 0, 1, 0, 1, 0, 1],
+        "col1.bf2": [1, 3, 2, 1, 3, 1, 2],
+        "col1.bf3": [0, 1, 0, 1, 0, 1, 0],
+    }
+
+    input_df = pandas.DataFrame(sample)
+
+    with NamedTemporaryFile() as fencode:
+        odyssey.encode_odb(input_df, fencode)
+        fencode.flush()
+
+        # We can extract columns with more complex names
+
+        df = odyssey.read_odb(fencode.name, single=True)
+        assert isinstance(df, pandas.DataFrame)
+        assert_dataframe_equal(df, input_df)
+
+        assert "col1.bf1" in df
+        assert "col1.bf2" in df
+        assert "col1.bf3" in df
+
+        # We can extract a subset of these columns
+
+        df = odyssey.read_odb(fencode.name, single=True, columns=("col1.bf2",))
+
+        assert "col1.bf1" not in df
+        assert "col1.bf2" in df
+        assert "col1.bf3" not in df
+
+        numpy.testing.assert_array_equal(df['col1.bf2'], input_df['col1.bf2'])
+
+
+@pytest.mark.parametrize("odyssey", odc_modules)
+def test_encode_decode_bitfield_like_fully_qualified(odyssey):
+
+    sample = {
+        "col1.bf1@tbl": [1, 0, 1, 0, 1, 0, 1],
+        "col1.bf2@tbl": [1, 3, 2, 1, 3, 1, 2],
+        "col1.bf3@tbl": [0, 1, 0, 1, 0, 1, 0],
+        "col1@tbl":     [0, 0, 0, 0, 0, 0, 0],
+    }
+
+    input_df = pandas.DataFrame(sample)
+
+    with NamedTemporaryFile() as fencode:
+        odyssey.encode_odb(input_df, fencode)
+        fencode.flush()
+
+        # We can extract columns with more complex names
+
+        df = odyssey.read_odb(fencode.name, single=True)
+        assert isinstance(df, pandas.DataFrame)
+        assert_dataframe_equal(df, input_df)
+
+        assert "col1.bf1@tbl" in df
+        assert "col1.bf2@tbl" in df
+        assert "col1.bf3@tbl" in df
+
+        # We can extract a subset of these columns
+
+        df = odyssey.read_odb(fencode.name, single=True, columns=("col1.bf2", "col1"))
+
+        assert "col1" in df
+        assert "col1.bf1" not in df
+        assert "col1.bf2" in df
+        assert "col1.bf3" not in df
+        assert "col1@tbl" not in df
+        assert "col1.bf1@tbl" not in df
+        assert "col1.bf2@tbl" not in df
+        assert "col1.bf3@tbl" not in df
+
+        numpy.testing.assert_array_equal(df['col1.bf2'], input_df['col1.bf2@tbl'])
+        numpy.testing.assert_array_equal(df['col1'], input_df['col1@tbl'])
+
+        # And by fully qualified name
+
+        df = odyssey.read_odb(fencode.name, single=True, columns=("col1.bf2@tbl", "col1@tbl"))
+
+        assert "col1" not in df
+        assert "col1.bf1" not in df
+        assert "col1.bf2" not in df
+        assert "col1.bf3" not in df
+        assert "col1@tbl" in df
+        assert "col1.bf1@tbl" not in df
+        assert "col1.bf2@tbl" in df
+        assert "col1.bf3@tbl" not in df
+
+        numpy.testing.assert_array_equal(df['col1.bf2@tbl'], input_df['col1.bf2@tbl'])
+        numpy.testing.assert_array_equal(df['col1@tbl'], input_df['col1@tbl'])
+
+
 @pytest.mark.parametrize("encode_odc, decode_odc", [(e, d) for e in odc_modules for d in odc_modules])
 def test_cross_library_encode_decode(encode_odc, decode_odc):
     "Check that all the four (encoder, decoder) pairs work across pyodc and codc, (if codc is present)."
