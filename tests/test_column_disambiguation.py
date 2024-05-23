@@ -60,3 +60,12 @@ def test_precedence(encoder, decoder):
     _helper(encoder, decoder,
         original_columns = ["foo.bitfield@bar", "foo@bar"],
         requested_columns = ["foo.bitfield@bar"])
+
+@pytest.mark.parametrize("encoder", odc_modules)
+@pytest.mark.parametrize("decoder", odc_modules)
+def test_literal_dot_in_shortname(encoder, decoder):
+    "Check you can use a shortname with a literal dot in it"
+    df, df2 = _helper(encoder, decoder,
+        original_columns = ["foo.bar@bar"],
+        requested_columns = ["foo.bar"])
+    assert "foo.bar" in df2.columns
