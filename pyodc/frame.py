@@ -264,18 +264,29 @@ class Frame:
 
         if columns is not None:
             final_columns = set()
+            _original_columns = self.column_dict.keys()
+            _original_simple_columns = self.simple_column_dict.keys()
+
             for colname in columns:
-                dotpos = colname.find(".")
-                if dotpos == -1:
+
+                # If the column is already present, then use that one directly.
+                # This ensures that we can handle exploded bitfield columns, and extract bitfields from
+                # existing columns below
+                if colname in _original_columns or colname in _original_simple_columns:
                     final_columns.add(colname)
                 else:
-                    column_name = colname[:dotpos]
-                    sp = colname[dotpos + 1 :].split("@")
-                    bitfield_name = sp[0]
-                    if len(sp) > 1:
-                        column_name += "@" + sp[1]
-                    final_columns.add(column_name)
-                    bitfields.append((bitfield_name, column_name, colname))
+                    # Once in here, we don't check if the column exists. If it doesn't this will show up later
+                    dotpos = colname.find(".")
+                    if dotpos == -1:
+                        final_columns.add(colname)
+                    else:
+                        column_name = colname[:dotpos]
+                        sp = colname[dotpos + 1 :].split("@")
+                        bitfield_name = sp[0]
+                        if len(sp) > 1:
+                            column_name += "@" + sp[1]
+                        final_columns.add(column_name)
+                        bitfields.append((bitfield_name, column_name, colname))
             columns = list(final_columns)
 
         df = self._dataframe_internal(columns)
@@ -338,15 +349,21 @@ class Frame:
         # names, but we also allow selection of short names of the form <name>@<table> (so
         # long as these names are not ambiguous
         output = {}
+        full_matches = set()
         for codec, output_col in zip(column_codecs, output_cols):
             if columns is None or codec.column_name in columns:
                 output[codec.column_name] = output_col
+                full_matches.add(codec.column_name)
             else:
                 splitname = codec.column_name.split("@")
                 if len(splitname) == 2:
                     name, table = splitname
                     if name in columns:
                         if name in output:
+                            # If we have already matched "foo" against "foo", then "foo" matching "foo@bar" is
+                            # a weaker match, not an ambiguity
+                            if name in full_matches:
+                                continue
                             raise KeyError("Ambiguous short column name '{}' requested".format(name))
                         output[name] = output_col
 

@@ -28,7 +28,7 @@ The package contains two different implementations of the same library:
 * [pandoc]
 * [Jupyter Notebook]
 
-For `codc` to work, `odc` library must be compiled and installed on the system and made available to Python (through the CFFI mechanism) as a shared library. There are multiple ways to make the library visible to CFFI: it can be installed as a system library, the installation prefix can be passed in `odc_DIR` environment variable, or the library directory can be included in `LD_LIBRARY_PATH`.
+For `codc` to work, `odc` library must be compiled and installed on the system and made available to Python (through the CFFI mechanism) as a shared library. There are multiple ways to make the library visible to CFFI: it can be installed as a system library, the installation prefix can be passed in the `odc_DIR` or `ODC_DIR` environment variables, or the library directory can be included in `LD_LIBRARY_PATH`.
 
 ## Installation
 

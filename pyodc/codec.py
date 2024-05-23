@@ -57,7 +57,7 @@ class Codec:
         return 8
 
     def encode_header(self, stream):
-        stream.encodeString(self.column_name)
+        stream.encodeString(str(self.column_name))
         stream.encodeInt32(self.type)
 
         if self.type == DataType.BITFIELD:
@@ -116,11 +116,27 @@ class Codec:
 
 class Constant(Codec):
     @classmethod
-    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields: list):
         assert data.nunique() == 1 and not data.hasnans
-        assert not bitfields
         value = next(iter(data))
-        return cls(column_name, value, value, data_type)
+
+        if bitfields:
+            assert data_type == DataType.BITFIELD
+            bitfield_names = [bf if isinstance(bf, str) else bf[0] for bf in bitfields]
+            bitfield_sizes = [1 if isinstance(bf, str) else bf[1] for bf in bitfields]
+        else:
+            bitfield_names = []
+            bitfield_sizes = []
+
+        return cls(
+            column_name,
+            minval=value,
+            maxval=value,
+            data_type=data_type,
+            has_missing=False,
+            bitfield_names=bitfield_names,
+            bitfield_sizes=bitfield_sizes,
+        )
 
     def encode(self, stream, value):
         pass
@@ -432,7 +448,7 @@ def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
                 data_type = DataType.DOUBLE
         elif data.dtype == "float32":
             data_type = DataType.REAL
-        elif data.dtype == "object":
+        elif data.dtype == "object" or pd.api.types.is_string_dtype(data):
             if not data.isnull().all() and all(s is None or isinstance(s, str) for s in data):
                 data_type = DataType.STRING
 
@@ -481,7 +497,7 @@ def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
             codec_class = ShortReal2
 
     elif data_type == DataType.STRING:
-        if data.nunique() == 1 and not data.hasnans:
+        if data.nunique() == 1 and len(data.iloc[0]) <= 8 and not data.hasnans:
             codec_class = ConstantString
         elif data.nunique() <= 256:
             codec_class = Int8String

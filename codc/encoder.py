@@ -57,7 +57,7 @@ def encode_odb(
                     dtype = INTEGER
                 else:
                     dtype = DOUBLE
-            elif arr.dtype == "object":
+            if arr.dtype == "object" or pandas.api.types.is_string_dtype(arr):
                 if not arr.isnull().all() and all(s is None or isinstance(s, str) for s in arr):
                     dtype = STRING
                 elif arr.isnull().all():
@@ -65,7 +65,7 @@ def encode_odb(
 
         # With an inferred, or supplied column type, massage the data into a form that can be encoded
 
-        if arr.dtype == "object":
+        if arr.dtype == "object" or pandas.api.types.is_string_dtype(arr):
             # Map strings into an array that can be read in C
             if dtype == STRING:
                 return_arr = return_arr.astype("|S{}".format(max(8, 8 * (1 + ((max(len(s) for s in arr) - 1) // 8)))))
@@ -106,7 +106,7 @@ def encode_odb(
         data, dtype = infer_column_type(data, types.get(name, None))
         data_cache.append(data)
 
-        lib.odc_encoder_add_column(encoder, name.encode("utf-8"), dtype)
+        lib.odc_encoder_add_column(encoder, str(name).encode("utf-8"), dtype)
         lib.odc_encoder_column_set_data_array(
             encoder,
             i,

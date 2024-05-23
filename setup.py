@@ -35,6 +35,7 @@ setuptools.setup(
     include_package_data=True,
     install_requires=[
         "cffi",
+        "findlibs>=0.0.5",
         "pandas",
     ],
     extras_require={},
