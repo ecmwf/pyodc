@@ -326,9 +326,9 @@ class Frame:
 
         for i in range(len(dataframes)):
             df = dataframes[i]
-            if df.dtypes[0] == np.int64:
+            if df.dtypes.iloc[0] == np.int64:
                 df.mask(df == missing_integer, inplace=True)
-            elif df.dtypes[0] == np.double:
+            elif df.dtypes.iloc[0] == np.double:
                 df.mask(df == missing_double, inplace=True)
             else:
                 # This is a bit yucky, but I haven't found any other way to decode from b'' strings to real ones
