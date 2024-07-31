@@ -317,7 +317,11 @@ class Frame:
 
                 # If we have missing values, we need to recreate these
                 if missing_vals is not None:
-                    new_column[missing_vals] = np.nan
+                    if bf.size == 1:
+                        new_column = new_column.astype("object")
+                        new_column[missing_vals] = np.nan
+                    else:
+                        new_column[missing_vals] = np.nan
 
                 df[output_name] = new_column
                 extracted_columns.add(column_name)
