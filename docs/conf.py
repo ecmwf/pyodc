@@ -17,9 +17,10 @@
 import datetime
 import os
 import sys
+from pathlib import Path
 
-top = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
-sys.path.insert(0, top)
+src = Path(__file__).resolve().parents[1] / "src"
+sys.path.insert(0, str(src))
 
 if True:  # Keep linters happy
     import pyodc
