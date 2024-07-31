@@ -17,7 +17,7 @@ import os
 
 import cffi
 import findlibs
-from pkg_resources import parse_version
+from packaging import version
 
 __odc_version__ = "1.4.0"
 
@@ -76,7 +76,7 @@ class PatchedLib:
         self.odc_version(tmp_str)
         versionstr = ffi.string(tmp_str[0]).decode("utf-8")
 
-        if parse_version(versionstr) < parse_version(__odc_version__):
+        if version.parse(versionstr) < version.parse(__odc_version__):
             raise RuntimeError("Version of libodc found is too old. {} < {}".format(versionstr, __odc_version__))
 
     def type_name(self, dtype: "DataType"):  # noqa: F821
