@@ -31,6 +31,7 @@ from itertools import accumulate, chain
 
 import numpy as np
 import pandas as pd
+import warnings
 
 
 class MismatchedFramesError(ValueError):
@@ -317,7 +318,11 @@ class Frame:
 
                 # If we have missing values, we need to recreate these
                 if missing_vals is not None:
-                    new_column[missing_vals] = np.nan
+                    if bf.size == 1:
+                        new_column = new_column.astype("object")
+                        new_column[missing_vals] = np.nan
+                    else:
+                        new_column[missing_vals] = np.nan
 
                 df[output_name] = new_column
                 extracted_columns.add(column_name)
@@ -402,12 +407,18 @@ class Frame:
         df = pd.DataFrame(output)
 
         if len(self._trailingAggregatedFrames) > 0:
-            return pd.concat(
-                [df] + [f._dataframe_internal(columns) for f in self._trailingAggregatedFrames],
-                copy=False,
-                axis=0,
-                ignore_index=True,
-            )
+            dfs = [df] + [f._dataframe_internal(columns) for f in self._trailingAggregatedFrames]
+            with warnings.catch_warnings():
+                # pandas 2.1.0 has a FutureWarning for concatenating DataFrames with Null entries
+                # It's not clear there's anything to do except suppress it.
+                # See https://github.com/pandas-dev/pandas/issues/55928
+                warnings.filterwarnings("ignore", category=FutureWarning)
+                return pd.concat(
+                    dfs,
+                    copy=False,
+                    axis=0,
+                    ignore_index=True,
+                )
         else:
             return df
 
