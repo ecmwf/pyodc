@@ -1,3 +1,4 @@
+import os
 import struct
 
 import pandas as pd
@@ -166,7 +167,6 @@ class ConstantString(Constant):
 
     def decode(self, stream):
         return struct.pack("<d", self.min).split(b"\x00", 1)[0].decode("utf-8")
-
 
 class NumericBase(Codec):
     _numChanges = None
@@ -435,6 +435,50 @@ class Int16String(Int8String):
         return stream.readUInt16()
 
 
+class LongConstantString(Codec):
+    value: str
+
+    def __init__(self, *args, value, **kwargs):
+        self.value = value
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def from_dataframe(cls, column_name: str, data: pd.Series, data_type: DataType, bitfields):
+        assert not data.hasnans
+        assert data_type == DataType.STRING
+        assert not bitfields
+        assert data.nunique() == 1
+        return cls(column_name, 0, 0, data_type, value=data.iloc[0])
+
+    @classmethod
+    def from_stream(cls, stream, column_name: str, data_type: DataType, bitfield_names, bitfield_sizes):
+        has_missing, minval, maxval, missing_value = cls.read_core_header(stream)
+        value = stream.readString()
+        return cls(
+            column_name,
+            minval,
+            maxval,
+            data_type,
+            value=value,
+            has_missing=has_missing,
+            bitfield_names=bitfield_names,
+            bitfield_sizes=bitfield_sizes,
+        )
+
+    def encode_header(self, stream):
+        super().encode_header(stream)
+        stream.encodeString(self.value)
+
+    def encode(self, stream, value):
+        pass
+
+    def decode(self, stream):
+        return self.value
+
+    @property
+    def numChanges(self):
+        return 0
+
 def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
     # If data types are not specified, determine them from the pandas Series
 
@@ -497,8 +541,10 @@ def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
             codec_class = ShortReal2
 
     elif data_type == DataType.STRING:
-        if data.nunique() == 1 and len(data.iloc[0]) <= 8 and not data.hasnans:
+        if data.nunique() == 1 and not data.hasnans and len(data.iloc[0]) <= 8:
             codec_class = ConstantString
+        elif data.nunique() == 1 and not data.hasnans and "ODC_ENABLE_WRITING_LONG_STRING_CODEC" in os.environ:
+            codec_class = LongConstantString
         elif data.nunique() <= 256:
             codec_class = Int8String
         else:
