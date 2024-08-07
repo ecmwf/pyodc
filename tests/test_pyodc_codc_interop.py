@@ -11,6 +11,7 @@ from pyodc.constants import INTERNAL_REAL_MISSING
 
 import pandas as pd
 import numpy as np
+import os
 
 # Each case is a single column and the expected codec 
 testcases = [
@@ -26,8 +27,7 @@ testcases = [
     # Constant columns of strings of less than 8 bytes go into ConstantString
     [["abcd"] * 7, codec.ConstantString],
 
-    # Constant columns of strings of more than 8 bytes currently get promoted to 
-    #  codec.Int8String but working on a version of ConstantString that supports longer strings.
+    # Constant columns of strings of more than 8 bytes must be handled differently
     [["abcdefghi"] * 7, codec.Int8String],
 
     # Columns of strings with less than 2^n unique values go into Int8String or Int16String
@@ -67,6 +67,27 @@ def test_codec_choice(testcase, encoder, decoder):
         codec = first_codec(fencode.name)
 
     assert type(codec) == expected_codec
+
+    # Check the data round tripped
+    numpy.testing.assert_array_equal(df.column.values, round_tripped_data.column.values)
+
+@pytest.mark.parametrize("encoder", odc_modules)
+@pytest.mark.parametrize("decoder", odc_modules)
+def test_codec_choice_long_string(encoder, decoder):
+    "Check that codc and pyodc choose the same codec for long constant strings in the presence of ODC_ENABLE_WRITING_LONG_STRING_CODEC"
+    testdata, expected_codec = [["abcdefghi"] * 7, codec.LongConstantString]
+    df = pd.DataFrame(dict(column = testdata))
+
+    os.environ["ODC_ENABLE_WRITING_LONG_STRING_CODEC"] = "true"
+
+    with NamedTemporaryFile() as fencode:
+        encoder.encode_odb(df, fencode.name)
+        round_tripped_data = decoder.read_odb(fencode.name, single = True)
+        chosen_codec = first_codec(fencode.name)
+
+    del os.environ["ODC_ENABLE_WRITING_LONG_STRING_CODEC"]
+
+    assert type(chosen_codec) == expected_codec
 
     # Check the data round tripped
     numpy.testing.assert_array_equal(df.column.values, round_tripped_data.column.values)
