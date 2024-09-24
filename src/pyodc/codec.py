@@ -533,8 +533,8 @@ def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
                 codec_class = RealConstantOrMissing
             else:
                 codec_class = Constant
-        elif INTERNAL_REAL_MISSING[1] in data:
-            if INTERNAL_REAL_MISSING[0] in data:
+        elif INTERNAL_REAL_MISSING[1] in data.values:
+            if INTERNAL_REAL_MISSING[0] in data.values:
                 raise ValueError("Cannot encode a float data series with both internal missing values")
             codec_class = ShortReal
         else:
