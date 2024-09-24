@@ -1,6 +1,6 @@
 import pandas
 
-from .constants import BITFIELD, DOUBLE, INTEGER, STRING
+from .constants import BITFIELD, REAL, DOUBLE, INTEGER, STRING
 from .lib import ffi, lib
 
 
@@ -52,11 +52,14 @@ def encode_odb(
         if dtype is None:
             if arr.dtype in ("uint64", "int64"):
                 dtype = INTEGER
-            elif arr.dtype == "float64":
+            elif arr.dtype in ["float32", "float64"]:
                 if not data.isnull().all() and all(pandas.isnull(v) or float(v).is_integer() for v in arr):
                     dtype = INTEGER
-                else:
+                elif arr.dtype == "float32":
+                    dtype = REAL
+                elif arr.dtype == "float64":
                     dtype = DOUBLE
+
             if arr.dtype == "object" or pandas.api.types.is_string_dtype(arr):
                 if not arr.isnull().all() and all(s is None or isinstance(s, str) for s in arr):
                     dtype = STRING
@@ -72,11 +75,12 @@ def encode_odb(
             elif dtype == INTEGER or dtype == BITFIELD:
                 return_arr = return_arr.fillna(value=missing_integer).astype("int64")
 
-        elif arr.dtype == "float64":
+        elif arr.dtype in ["float32", "float64"]:
             if dtype == INTEGER or dtype == BITFIELD:
                 return_arr = arr.fillna(value=missing_integer).astype("int64")
             else:
-                return_arr = arr.fillna(value=missing_double)
+                # Because odc only accepts 64 bit data we cast to float64 for both the float32 and float64 cases
+                return_arr = arr.fillna(value=missing_double).astype("float64")
 
         if dtype is None:
             raise ValueError("Unsupported value type: {}".format(arr.dtype))
