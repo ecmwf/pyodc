@@ -59,6 +59,7 @@ testcases = [
 
     # ShortReal2 is the default codec for float32 which uses INTERNAL_REAL_MISSING[1] to represent missing data
     [np.array([999.99, 888.88, 777.77, 666.66, 555.55, 444.44, 333.33], dtype = np.float32), codec.ShortReal2], 
+    [np.array([INTERNAL_REAL_MISSING[0], 888.88, 777.77, 666.66, 555.55, 444.44, 333.33], dtype = np.float32), codec.ShortReal2], 
 
     # When INTERNAL_REAL_MISSING[1] is present, the codec switches to ShortReal which uses a different value to represent missing data
     [np.array([INTERNAL_REAL_MISSING[1], 888.88, 777.77, 666.66, 555.55, 444.44, 333.33], dtype = np.float32), codec.ShortReal],
