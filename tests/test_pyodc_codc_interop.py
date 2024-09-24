@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 import os
 
-# Each case is a single column and the expected codec 
+# Each case is [data_column, expected_codec]
 testcases = [
     # Anything constant that fits in less than 8 bytes goes into codec.Constant
     [[0, 0, 0, 0, 0, 0, 0], codec.Constant],
@@ -38,6 +38,18 @@ testcases = [
     [[1, 2, 3, 4, 5, 6, 7], codec.Int8],
     [[1, None, 3, 4, 5, None, 7], codec.Int8Missing],
     [[-512, None, 3, 7623, -22000, None, 7], codec.Int16Missing],
+
+    # Integers supplied at int32, int16 or int8 need to be internally cast to int64 if using the codc encoder
+    [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.uint8), codec.Int8],
+    [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.int8), codec.Int8],
+    [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.uint16), codec.Int8],
+    [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.int16), codec.Int8],
+    [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.uint32), codec.Int8],
+    [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.int32), codec.Int8],
+    [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.int64), codec.Int8],
+
+    # uint64 is not supported
+    # [np.array([1, 2, 3, 4, 5, 6, 7, 2**64 - 1], dtype = np.uint64), codec.Int8],
 
     # Breaking the pattern, codec.Int32 accepts missing values.
     [[-1234567, 8765432, None, 22, 22222222, -81222323, None], codec.Int32],
