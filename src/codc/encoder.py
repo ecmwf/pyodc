@@ -68,8 +68,8 @@ def encode_odb(
                     dtype = INTEGER
 
         # With an inferred, or supplied column type, massage the data into a form that can be encoded
-        if dtype == INTEGER:
-            return_arr = arr.fillna(value=missing_integer).astype("int64")
+        if dtype == INTEGER and arr.dtype in ("uint8", "int8", "uint16", "int16", "uint32", "int32"):
+            return_arr = arr.astype("int64", copy = False)
 
         if arr.dtype == "object" or pandas.api.types.is_string_dtype(arr):
             # Map strings into an array that can be read in C
