@@ -39,7 +39,7 @@ testcases = [
     [[1, None, 3, 4, 5, None, 7], codec.Int8Missing],
     [[-512, None, 3, 7623, -22000, None, 7], codec.Int16Missing],
 
-    # Integers supplied at int32, int16 or int8 need to be internally cast to int64 if using the codc encoder
+    # Integers supplied as int32, int16 or int8 need to be internally cast to int64 if using the codc encoder
     [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.uint8), codec.Int8],
     [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.int8), codec.Int8],
     [np.array([1, 2, 3, 4, 5, 6, 7], dtype = np.uint16), codec.Int8],
