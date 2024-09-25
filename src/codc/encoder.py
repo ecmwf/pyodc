@@ -80,7 +80,11 @@ def encode_odb(
 
         elif arr.dtype in ["float32", "float64"]:
             if dtype == INTEGER or dtype == BITFIELD:
-                return_arr = arr.fillna(value=missing_integer).astype("int64")
+                # float32 can't losslessly represent missing_integer so we have to cast to float64
+                # replace nans with missing_integer and then cast to int64
+                return_arr = arr.astype("float64", copy = False) \
+                                .fillna(value=missing_integer) \
+                                .astype("int64")
             else:
                 # Because odc only accepts 64 bit data we cast to float64 for both the float32 and float64 cases
                 return_arr = arr.fillna(value=missing_double).astype("float64")
