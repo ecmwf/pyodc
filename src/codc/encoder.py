@@ -87,7 +87,7 @@ def encode_odb(
                                 .astype("int64")
             else:
                 # Because odc only accepts 64 bit data we cast to float64 for both the float32 and float64 cases
-                return_arr = arr.fillna(value=missing_double).astype("float64")
+                return_arr = arr.fillna(value=missing_double).astype("float64", copy = False)
 
         if dtype is None:
             raise ValueError("Unsupported value type: {}".format(arr.dtype))
