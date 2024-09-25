@@ -88,9 +88,9 @@ def test_codec_choice(testcase, encoder, decoder):
     with NamedTemporaryFile() as fencode:
         encoder.encode_odb(df, fencode.name)
         round_tripped_data = decoder.read_odb(fencode.name, single = True)
-        codec = first_codec(fencode.name)
+        chosen_codec = type(first_codec(fencode.name))
 
-    assert type(codec) == expected_codec
+    assert chosen_codec == expected_codec, f"{encoder.__name__} chose codec '{chosen_codec.__name__}' but we expected '{expected_codec.__name__}' for {testdata!r}"
 
     # Check the data round tripped
     numpy.testing.assert_array_equal(df.column.values, round_tripped_data.column.values)
