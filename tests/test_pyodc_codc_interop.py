@@ -69,9 +69,8 @@ testcases = [
 def first_codec(file):
     return Reader(file).frames[0]._column_codecs[0]
 
-
-@pytest.mark.parametrize("encoder", odc_modules)
 @pytest.mark.parametrize("decoder", odc_modules)
+@pytest.mark.parametrize("encoder", odc_modules)
 @pytest.mark.parametrize("testcase", testcases)
 def test_codec_choice(testcase, encoder, decoder):
     "Check that codc and pyodc choose the same codec for all the test data"
