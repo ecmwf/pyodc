@@ -52,6 +52,10 @@ testcases = [
     [[1., 2., 3., 4., 5., 6., 7.], codec.Int8],
     [[1., 2., 3., 4., 5., 6., 7., None], codec.Int8Missing],
     [[1., 2., 3., 4., 5., 6., 7., np.nan], codec.Int8Missing],
+    [np.array([1., 2., 3., 4., 5., 6., 7., np.nan]), codec.Int8Missing],
+    [np.array([1., 2., 3., 4., 5., 6., 7.], dtype = np.float32), codec.Int8],
+    [np.array([1., 2., 3., 4., 5., 6., 7., np.nan], dtype = np.float32), codec.Int8Missing],
+
     # uint64 is not supported
     # [np.array([1, 2, 3, 4, 5, 6, 7, 2**64 - 1], dtype = np.uint64), codec.Int8],
 
