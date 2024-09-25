@@ -1,6 +1,6 @@
 from enum import IntEnum, unique
 
-from .lib import ffi, lib, ODCException
+from .lib import ODCException, ffi, lib
 
 
 @unique
@@ -22,6 +22,7 @@ DOUBLE = DataType.DOUBLE
 
 
 _type_names = {}
+
 
 def type_name(typ):
     try:

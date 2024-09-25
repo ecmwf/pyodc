@@ -168,6 +168,7 @@ class ConstantString(Constant):
     def decode(self, stream):
         return struct.pack("<d", self.min).split(b"\x00", 1)[0].decode("utf-8")
 
+
 class NumericBase(Codec):
     _numChanges = None
     _data = None
@@ -479,14 +480,15 @@ class LongConstantString(Codec):
     def numChanges(self):
         return 0
 
+
 def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
     # If data types are not specified, determine them from the pandas Series
 
     if data_type is None:
         if data.dtype in ["{}int{}".format(s, b) for s in ("", "u") for b in (8, 16, 32, 64)]:
             data_type = DataType.INTEGER
-        
-        elif data.dtype in  ("float64", "float32"):
+
+        elif data.dtype in ("float64", "float32"):
             # Detect integers encoded as float32 or 64 (NaNs also can't be present)
             if not data.isnull().all() and all(pd.isnull(v) or float(v).is_integer() for v in data):
                 data_type = DataType.INTEGER
@@ -494,7 +496,7 @@ def select_codec(column_name: str, data: pd.Series, data_type, bitfields):
                 data_type = DataType.DOUBLE
             elif data.dtype == "float32":
                 data_type = DataType.REAL
-                
+
         elif data.dtype == "object" or pd.api.types.is_string_dtype(data):
             if not data.isnull().all() and all(s is None or isinstance(s, str) for s in data):
                 data_type = DataType.STRING

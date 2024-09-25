@@ -1,6 +1,6 @@
 import pandas
 
-from .constants import BITFIELD, REAL, DOUBLE, INTEGER, STRING
+from .constants import BITFIELD, DOUBLE, INTEGER, REAL, STRING
 from .lib import ffi, lib
 
 
@@ -69,7 +69,7 @@ def encode_odb(
 
         # With an inferred, or supplied column type, massage the data into a form that can be encoded
         if dtype == INTEGER and arr.dtype in ("uint8", "int8", "uint16", "int16", "uint32", "int32"):
-            return_arr = arr.astype("int64", copy = False)
+            return_arr = arr.astype("int64", copy=False)
 
         if arr.dtype == "object" or pandas.api.types.is_string_dtype(arr):
             # Map strings into an array that can be read in C
@@ -82,12 +82,10 @@ def encode_odb(
             if dtype == INTEGER or dtype == BITFIELD:
                 # float32 can't losslessly represent missing_integer so we have to cast to float64
                 # replace nans with missing_integer and then cast to int64
-                return_arr = arr.astype("float64", copy = False) \
-                                .fillna(value=missing_integer) \
-                                .astype("int64")
+                return_arr = arr.astype("float64", copy=False).fillna(value=missing_integer).astype("int64")
             else:
                 # Because odc only accepts 64 bit data we cast to float64 for both the float32 and float64 cases
-                return_arr = arr.fillna(value=missing_double).astype("float64", copy = False)
+                return_arr = arr.fillna(value=missing_double).astype("float64", copy=False)
 
         if dtype is None:
             raise ValueError("Unsupported value type: {}".format(arr.dtype))
