@@ -181,7 +181,6 @@ class Frame:
             _original_simple_columns = self.simple_column_dict.keys()
 
             for colname in columns:
-
                 # If the column is already present, then use that one directly.
                 # This ensures that we can handle exploded bitfield columns, and extract bitfields from
                 # existing columns below
