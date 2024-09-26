@@ -27,11 +27,11 @@ try:
 except ImportError:
     from collections import Iterable
 
+import warnings
 from itertools import accumulate, chain
 
 import numpy as np
 import pandas as pd
-import warnings
 
 
 class MismatchedFramesError(ValueError):
@@ -269,7 +269,6 @@ class Frame:
             _original_simple_columns = self.simple_column_dict.keys()
 
             for colname in columns:
-
                 # If the column is already present, then use that one directly.
                 # This ensures that we can handle exploded bitfield columns, and extract bitfields from
                 # existing columns below
@@ -411,7 +410,7 @@ class Frame:
             with warnings.catch_warnings():
                 # pandas 2.1.0 has a FutureWarning for concatenating DataFrames with Null entries
                 # It's not clear there's anything to do except suppress it.
-                # See https://github.com/pandas-dev/pandas/issues/55928
+                # See https://github.com/pandas-dev/pandas/issues/55928
                 warnings.filterwarnings("ignore", category=FutureWarning)
                 return pd.concat(
                     dfs,

@@ -1,6 +1,11 @@
 
 # Changelog for pyodc
 
+## xxxxx
+
+* Fixed [ODB-559]: Type coerce int32, float32 etc encoded data before passing to odc.
+* Fix the selection logic for ShortReal2 and ShortReal codecs so the smallest positive normal float32 number `struct.unpack("<f", b"\x00\x00\x80\x00")[0]` can be used in data.
+
 ## 1.1.3
 
 * Improved github/ci integration

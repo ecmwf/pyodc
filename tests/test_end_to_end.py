@@ -293,7 +293,6 @@ def test_encode_decode_bitfields(odyssey):
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_bitfield_like(odyssey):
-
     sample = {
         "col1.bf1": [1, 0, 1, 0, 1, 0, 1],
         "col1.bf2": [1, 3, 2, 1, 3, 1, 2],
@@ -324,17 +323,16 @@ def test_encode_decode_bitfield_like(odyssey):
         assert "col1.bf2" in df
         assert "col1.bf3" not in df
 
-        numpy.testing.assert_array_equal(df['col1.bf2'], input_df['col1.bf2'])
+        numpy.testing.assert_array_equal(df["col1.bf2"], input_df["col1.bf2"])
 
 
 @pytest.mark.parametrize("odyssey", odc_modules)
 def test_encode_decode_bitfield_like_fully_qualified(odyssey):
-
     sample = {
         "col1.bf1@tbl": [1, 0, 1, 0, 1, 0, 1],
         "col1.bf2@tbl": [1, 3, 2, 1, 3, 1, 2],
         "col1.bf3@tbl": [0, 1, 0, 1, 0, 1, 0],
-        "col1@tbl":     [0, 0, 0, 0, 0, 0, 0],
+        "col1@tbl": [0, 0, 0, 0, 0, 0, 0],
     }
 
     input_df = pandas.DataFrame(sample)
@@ -366,8 +364,8 @@ def test_encode_decode_bitfield_like_fully_qualified(odyssey):
         assert "col1.bf2@tbl" not in df
         assert "col1.bf3@tbl" not in df
 
-        numpy.testing.assert_array_equal(df['col1.bf2'], input_df['col1.bf2@tbl'])
-        numpy.testing.assert_array_equal(df['col1'], input_df['col1@tbl'])
+        numpy.testing.assert_array_equal(df["col1.bf2"], input_df["col1.bf2@tbl"])
+        numpy.testing.assert_array_equal(df["col1"], input_df["col1@tbl"])
 
         # And by fully qualified name
 
@@ -382,8 +380,8 @@ def test_encode_decode_bitfield_like_fully_qualified(odyssey):
         assert "col1.bf2@tbl" in df
         assert "col1.bf3@tbl" not in df
 
-        numpy.testing.assert_array_equal(df['col1.bf2@tbl'], input_df['col1.bf2@tbl'])
-        numpy.testing.assert_array_equal(df['col1@tbl'], input_df['col1@tbl'])
+        numpy.testing.assert_array_equal(df["col1.bf2@tbl"], input_df["col1.bf2@tbl"])
+        numpy.testing.assert_array_equal(df["col1@tbl"], input_df["col1@tbl"])
 
 
 @pytest.mark.parametrize("encode_odc, decode_odc", [(e, d) for e in odc_modules for d in odc_modules])

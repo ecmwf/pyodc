@@ -64,6 +64,16 @@ To run the unit tests, make sure that the `pytest` module is installed first:
 python -m pytest
 ```
 
+### Run Unit Tests across multiple python versions with Tox
+
+Tox is a useful tool to quickly run pytest across multiple python versions by managing a set of python environments for you. A tox.ini file is provided that targets python3.8 - 3.12. Note that this will also install older versions of libraries like numpy which helps to catch incompatibilities with older versions of those libraries too.
+
+To run tox, [install it](https://tox.wiki/), modify the `ODC_HOME = ../build` line in tox.ini to point to a build of odc, this will be reused for all the tests. Then run
+```sh
+tox
+```
+The first run will take a while for it to install all the environments but after that it's very fast.
+
 ### Build Documentation
 
 To build the documentation locally, please install the Python dependencies first:
