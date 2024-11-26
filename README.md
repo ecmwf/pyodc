@@ -54,6 +54,12 @@ cd pyodc
 jupyter notebook Introduction.ipynb
 ```
 
+Note that **codc is not thread safe** so care should be taken when using it with dask. You can set dask to use processses rather than threads by doing:
+```
+with dask.config.set(scheduler='processes'):
+    dask.compute(...)
+```
+
 ## Development
 
 ### Run Unit Tests
