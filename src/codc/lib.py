@@ -19,7 +19,7 @@ import cffi
 import findlibs
 from packaging import version
 
-__odc_version__ = "1.4.0"
+__odc_version__ = "1.6.0"
 
 ffi = cffi.FFI()
 
