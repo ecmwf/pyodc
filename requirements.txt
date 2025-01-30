@@ -4,3 +4,4 @@ pandas
 pytest
 pytest-cov
 pytest-flakes
+packaging
