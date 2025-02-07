@@ -1,10 +1,37 @@
 
 # Changelog for pyodc
 
-## xxxxx
+## 1.5.0
 
-* Fixed [ODB-559]: Type coerce int32, float32 etc encoded data before passing to odc.
-* Fix the selection logic for ShortReal2 and ShortReal codecs so the smallest positive normal float32 number `struct.unpack("<f", b"\x00\x00\x80\x00")[0]` can be used in data.
+* Add a new LongConstantString codec which permits encoding constant columns where the constant is a string > 8 characters in length.
+    * This saves 1 byte per row compared the previous way these columns were encoded.
+    * A C++ implementation has been added to ODC at the same time, version 1.6.0
+    * Bumped required ODC version to 1.6.0 for feature parity.
+    * Decoding data using this codec will work straight away.
+    * Encoding data with the new codec is disabled by default and can be enabled with the environment variable "ODC_ENABLE_WRITING_LONG_STRING_CODEC=1".
+    * At some point in a future release, encoding will be enabled by default.
+
+* Accept various new datatypes and tighten datatype selection logic (fixes [ODB-559]):
+    * Unsigned Integers: uint8 - uint32 (note uint64 is not supported).
+    * Signed Integers: int8 - int64.
+    * Float32 in addition to float64.
+    * Fixed the selection logic for ShortReal2 and ShortReal codecs so the smallest positive normal float32 number `struct.unpack("<f", b"\x00\x00\x80\x00")[0]` can now be used in data.
+
+* Converted to a pyproject.toml based package.
+
+* Fix various warnings:
+    * Pandas Deprecation warning about `df.dtypes[0]` needing to become `df.dtypes.iloc[0]`.
+    * Pandas Deprecation warning about converting implicitly converting dataframe column dtype.
+    * Pandas Future Warning about concatenation with empty or all-NA dataframes.
+    * "pkg_resources is deprecated as an API."
+
+## 1.4.1
+
+* Use findlibs instead of custom finder for odc
+* Support constant bitfields
+* Correct encoding with constant strings > 8 characters in length
+* Support pandas native string type
+* Fix access to exploded bitfield columns
 
 ## 1.1.3
 
