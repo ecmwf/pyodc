@@ -45,7 +45,9 @@ class PatchedLib:
     def __init__(self):
         ffi.cdef(self.__read_header())
 
-        library_path = findlibs.find("odccore", pkg_name="odc")
+        library_path = findlibs.find("odccore", pkg_name="odclib")
+        if library_path is None:
+            library_path = findlibs.find("odccore", pkg_name="odc")
         if library_path is None:
             raise RuntimeError("Cannot find the odccore library")
 
