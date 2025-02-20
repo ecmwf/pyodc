@@ -1,6 +1,14 @@
 
 # Changelog for pyodc
 
+## 1.6.0
+
+* `pip install pyodc` will now install the C++ backend so `codc` will work immediately.
+    * The C++ backed is now installable with pip from `odclib`.
+    * Added `findlibs` and `odclib` as dependencies.
+    * To force the use of a different `odc` shared library, set the environment variable `ODC_DIR` to the directory containing the shared library. See the [findlibs] documentation for more information.
+
+
 ## 1.5.0
 
 * Add a new LongConstantString codec which permits encoding constant columns where the constant is a string > 8 characters in length.
@@ -86,7 +94,9 @@
 * Initial version
 
 
+[findlibs]: https://github.com/ecmwf/findlibs/
 [#6]: https://github.com/ecmwf/pyodc/issues/6
+[ODB-559]: https://jira.ecmwf.int/browse/ODB-559
 [ODB-534]: https://jira.ecmwf.int/browse/ODB-534
 [ODB-533]: https://jira.ecmwf.int/browse/ODB-533
 [ODB-530]: https://jira.ecmwf.int/browse/ODB-530
