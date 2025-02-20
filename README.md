@@ -13,7 +13,7 @@ The package contains two different implementations of the same library:
 * `pyodc` is a pure-python encoder and decoder for ODB\-2 data, which encodes data from, and decodes it into pandas data frames
 * `codc` is an implementation of the same API as `pyodc` that depends on the ECMWF `odc` library, and comes with _much_ better performance.
 
-Both libraries are be installed by running `pip install pyodc`, and since version 1.6.0, a pre-built wheel version of `odc` will be automatically installed so that `codc` can be used without any additional steps.
+Both libraries are installed by running `pip install pyodc`, and since version 1.6.0, a pre-built wheel version of `odc` will be automatically installed so that `codc` can be used without any additional steps.
 
 [Documentation] [Changelog]
 
@@ -30,7 +30,7 @@ Both libraries are be installed by running `pip install pyodc`, and since versio
 * [pandoc]
 * [Jupyter Notebook]
 
-For `codc` to work, the `odc` library must be compiled and installed on the system and made available to Python. Typically this happens automatically as described above through the dependency on `odclib` which bundles a precompiled version of `odc` as a wheel. If some some reason this doesn't work, there are multiple other ways to make the library visible to pyodc:
+For `codc` to work, the `odc` library must be compiled and installed on the system and made available to Python. Typically this happens automatically as described above through the dependency on `odclib` which bundles a precompiled version of `odc` as a wheel. If this doesn't work, there are multiple other ways to make the library visible to pyodc:
 * It can be installed as a system library.
 * The installation prefix can be passed in the `odc_DIR` or `ODC_DIR` environment variables.
 * The library directory can be included in `LD_LIBRARY_PATH.
