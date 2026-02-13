@@ -337,10 +337,12 @@ class Frame:
                 # This is a bit yucky, but I haven't found any other way to decode from b'' strings to real ones
                 # Also note, result_type added to work around bug in pandas
                 # https://github.com/pandas-dev/pandas/issues/34529
+                #
+                # The final .astype('object') seems to be only needed in python 3.11 (ODB-571)
                 dataframes[i] = df.apply(
                     lambda x: x.astype("object").str.decode("utf_8_null"),
                     result_type="expand",
-                )
+                ).astype('object')
 
         # And construct the DataFrame from the decoded data
 

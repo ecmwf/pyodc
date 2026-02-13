@@ -56,7 +56,10 @@ def _read_odb_oneshot(source, columns=None):
     reduced = pandas.concat(_read_odb_generator(source, columns), sort=False, ignore_index=True)
     for name, data in reduced.items():
         if data.dtype == "object":
-            data.where(pandas.notnull(data), None, inplace=True)
+            # With python 3.11, this inplace=True is having a copy somehow, and is not being inplace without the
+            # explicit assignment. Sigh. Workes again with more recent python. (ODB-571)
+            # data.where(pandas.notnull(data), None, inplace=True)
+            reduced[name] = data.where(pandas.notnull(data), None)
     return reduced
 
 

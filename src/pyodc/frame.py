@@ -19,6 +19,7 @@ from .constants import (
     MAGIC,
     NEW_HEADER,
     TYPE_NAMES,
+    STRING,
 )
 from .stream import BigEndianStream, LittleEndianStream
 
@@ -354,10 +355,12 @@ class Frame:
         # long as these names are not ambiguous
         output = {}
         full_matches = set()
+        codec_lookup = {}
         for codec, output_col in zip(column_codecs, output_cols):
             if columns is None or codec.column_name in columns:
                 output[codec.column_name] = output_col
                 full_matches.add(codec.column_name)
+                codec_lookup[codec.column_name] = codec
             else:
                 splitname = codec.column_name.split("@")
                 if len(splitname) == 2:
@@ -370,6 +373,7 @@ class Frame:
                                 continue
                             raise KeyError("Ambiguous short column name '{}' requested".format(name))
                         output[name] = output_col
+                        codec_lookup[name] = codec
 
         if columns:
             for name in columns:
@@ -404,6 +408,15 @@ class Frame:
                 output_cols[col].extend(last for _ in range(self._numberOfRows - lastDecoded[col] - 1))
 
         df = pd.DataFrame(output)
+
+        # For some reason with python 3.11 (not lower or higher) this is defaulting to the (experimental) numpy
+        # dtype=StringDType. Which doesn't play nice with None. (ODB-571)
+        #
+        # We could in the future use StringDType, and return numpy.NaN for missing values, but we would want to
+        # introduce this as an optional, or a breaking change, rather than just depending on the version of python...
+        for name, codec in codec_lookup.items():
+            if codec.type == STRING and df[name].dtype != 'object':
+                df[name] = df[name].astype('object')
 
         if len(self._trailingAggregatedFrames) > 0:
             dfs = [df] + [f._dataframe_internal(columns) for f in self._trailingAggregatedFrames]
