@@ -57,7 +57,7 @@ def _read_odb_oneshot(source, columns=None):
     for name, data in reduced.items():
         if data.dtype == "object":
             # With python 3.11, this inplace=True is having a copy somehow, and is not being inplace without the
-            # explicit assignment. Sigh. Workes again with more recent python. (ODB-571)
+            # explicit assignment. Sigh. Works again with more recent python. (ODB-571)
             # data.where(pandas.notnull(data), None, inplace=True)
             reduced[name] = data.where(pandas.notnull(data), None)
     return reduced
