@@ -409,10 +409,11 @@ class Frame:
 
         df = pd.DataFrame(output)
 
-        # For some reason with python 3.11 (not lower or higher) this is defaulting to the (experimental) numpy
-        # dtype=StringDType. Which doesn't play nice with None. (ODB-571)
+        # For some reason with python 3.11 (not lower or higher) this is defaulting to pandas' experimental
+        # StringDtype extension dtype (often rendered as 'string' / 'string[python]'), rather than the usual
+        # numpy object dtype. This doesn't play nice with None. (ODB-571)
         #
-        # We could in the future use StringDType, and return numpy.NaN for missing values, but we would want to
+        # We could in the future use pandas' StringDtype, and return numpy.NaN for missing values, but we would want to
         # introduce this as an optional, or a breaking change, rather than just depending on the version of python...
         for name, codec in codec_lookup.items():
             if codec.type == STRING and df[name].dtype != 'object':
