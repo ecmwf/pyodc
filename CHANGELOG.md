@@ -1,6 +1,10 @@
 
 # Changelog for pyodc
 
+## 1.6.1
+
+* Fixed [ODB-571]: Fix inappropriate defaulting to dtype=StringDType in python 3.11 with Pandas 3
+
 ## 1.6.0
 
 * `pip install pyodc` will now install the C++ backend so `codc` will work immediately.
@@ -96,6 +100,7 @@
 
 [findlibs]: https://github.com/ecmwf/findlibs/
 [#6]: https://github.com/ecmwf/pyodc/issues/6
+[ODB-571]: https://jira.ecmwf.int/browse/ODB-571
 [ODB-559]: https://jira.ecmwf.int/browse/ODB-559
 [ODB-534]: https://jira.ecmwf.int/browse/ODB-534
 [ODB-533]: https://jira.ecmwf.int/browse/ODB-533
