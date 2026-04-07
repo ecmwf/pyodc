@@ -5,6 +5,9 @@ line-length = 120
 profile = "black"
 line_length = 120
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
 [build-system]
 requires = ["setuptools>=4.2"]
 build-backend = "setuptools.build_meta"

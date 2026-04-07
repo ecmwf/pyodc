@@ -2,3 +2,4 @@ ipykernel
 nbsphinx
 sphinx-rtd-theme==0.5.2
 pandas
+standard-imghdr
