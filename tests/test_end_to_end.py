@@ -40,22 +40,24 @@ def assert_dataframe_equal(df1, df2):
     """
     Assert that two dataframes are equal, but ignoring column order
     """
-    # There appears to be a test failure due to a straight bug in python 3.11/pandas 3. The dtypes are
-    # FALSELY comparing as non-equal. Seems to be related to other changes related to the same ODB issue, where
-    # pandas is wrongly defaulting to dtype=StringDType for some strings. (ODB-571)
-    #
-    # Therefore turn check_dtype=False if we are in a version that breaks this falsely...
-
-    check_dtypes = 'str' not in (str(df1[col].dtype) for col in df1)
-
     pandas.testing.assert_frame_equal(
         df1.sort_index(axis=1),
         df2.sort_index(axis=1),
-        check_dtype=check_dtypes,
     )
 
-def encode_sample(odyssey, f):
+
+def sample_dataframe():
+    # Decoded strings come back as object dtype with None for missing values, so build the
+    # comparison frame with object dtype for string columns (pandas 3 would infer str dtype). (ODB-571)
     df = pandas.DataFrame(SAMPLE_DATA)
+    for col, values in SAMPLE_DATA.items():
+        if any(isinstance(v, str) for v in values):
+            df[col] = df[col].astype("object")
+    return df
+
+
+def encode_sample(odyssey, f):
+    df = sample_dataframe()
 
     types = {
         "col8": odyssey.REAL,
@@ -402,7 +404,7 @@ def test_cross_library_encode_decode(encode_odc, decode_odc):
     }
 
     with NamedTemporaryFile() as f:
-        df1 = pandas.DataFrame(SAMPLE_DATA)
+        df1 = sample_dataframe()
         encode_odc.encode_odb(df1, f, types=SAMPLE_TYPES, bitfields=SAMPLE_BITFIELDS)
         f.flush()
         df2 = decode_odc.read_odb(f.name, single=True)

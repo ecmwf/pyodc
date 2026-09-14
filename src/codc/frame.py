@@ -338,11 +338,13 @@ class Frame:
                 # Also note, result_type added to work around bug in pandas
                 # https://github.com/pandas-dev/pandas/issues/34529
                 #
-                # The final .astype('object') seems to be only needed in python 3.11 (ODB-571)
+                # Under pandas 3, .str.decode() on an object Series returns str dtype; the trailing
+                # .astype("object") restores object dtype (a no-op under pandas 2). (ODB-571)
+                # See https://pandas.pydata.org/docs/user_guide/migration-3-strings.html
                 dataframes[i] = df.apply(
                     lambda x: x.astype("object").str.decode("utf_8_null"),
                     result_type="expand",
-                ).astype('object')
+                ).astype("object")
 
         # And construct the DataFrame from the decoded data
 

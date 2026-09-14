@@ -18,8 +18,8 @@ from .constants import (
     FORMAT_VERSION_NUMBER_MINOR,
     MAGIC,
     NEW_HEADER,
-    TYPE_NAMES,
     STRING,
+    TYPE_NAMES,
 )
 from .stream import BigEndianStream, LittleEndianStream
 
@@ -409,15 +409,16 @@ class Frame:
 
         df = pd.DataFrame(output)
 
-        # For some reason with python 3.11 (not lower or higher) this is defaulting to pandas' experimental
-        # StringDtype extension dtype (often rendered as 'string' / 'string[python]'), rather than the usual
-        # numpy object dtype. This doesn't play nice with None. (ODB-571)
+        # pandas 3 infers its default str dtype for string data, where pandas 2 gave numpy object dtype,
+        # and str represents missing values as nan rather than None. Coerce back to object so missing
+        # strings stay None. (ODB-571)
+        # See https://pandas.pydata.org/docs/user_guide/migration-3-strings.html
         #
-        # We could in the future use pandas' StringDtype, and return numpy.NaN for missing values, but we would want to
-        # introduce this as an optional, or a breaking change, rather than just depending on the version of python...
+        # We could in the future adopt pandas' StringDtype properly, but we would want to introduce this
+        # as an optional, or a breaking change, rather than just depending on the version of pandas...
         for name, codec in codec_lookup.items():
-            if codec.type == STRING and df[name].dtype != 'object':
-                df[name] = df[name].astype('object')
+            if codec.type == STRING and df[name].dtype != "object":
+                df[name] = df[name].astype("object")
 
         if len(self._trailingAggregatedFrames) > 0:
             dfs = [df] + [f._dataframe_internal(columns) for f in self._trailingAggregatedFrames]
