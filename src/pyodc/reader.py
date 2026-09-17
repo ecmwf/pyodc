@@ -60,9 +60,12 @@ def _read_odb_oneshot(source, columns=None):
     reduced = pandas.concat(_read_odb_generator(source, columns), sort=False, ignore_index=True)
     for name, data in reduced.items():
         if data.dtype == "object":
-            # With python 3.11, this inplace=True is having a copy somehow, and is not being inplace without the
-            # explicit assignment. Sigh. Works again with more recent python. (ODB-571)
-            # data.where(pandas.notnull(data), None, inplace=True)
+            # Under pandas 3, an inplace method on a column taken from a DataFrame no longer
+            # writes back to it -- copy-on-write treats it as chained assignment. Binding the
+            # column to a name suppresses even the ChainedAssignmentError, so the old
+            # where(..., inplace=True) failed silently. Reassign instead. (ODB-571)
+            # See "Updating a column selected from a DataFrame with an inplace method" in
+            # https://pandas.pydata.org/docs/user_guide/copy_on_write.html
             reduced[name] = data.where(pandas.notnull(data), None)
     return reduced
 
