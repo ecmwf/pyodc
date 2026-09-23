@@ -7,3 +7,5 @@ build:
     - ecmwf/eckit@develop
     - ecmwf/odc@develop
   parallel: 64
+  env:
+    - FINDLIBS_DISABLE_PACKAGE=yes
