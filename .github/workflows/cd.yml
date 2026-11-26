@@ -9,3 +9,8 @@ jobs:
   pypi:
     uses: ecmwf/reusable-workflows/.github/workflows/cd-pypi.yml@v2
     secrets: inherit
+    with:
+      env_vars: |
+        {
+          "DEPEND_ON_ODCLIB": "1"
+        }
